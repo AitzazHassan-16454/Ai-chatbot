@@ -1,0 +1,423 @@
+{
+  "name": "AI Chatbot - Feedback Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot-webhook",
+        "responseMode": "responseNode",
+        "responseData": "allEntries"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "feedback-id",
+              "name": "feedbackId",
+              "value": "={{ $json.body.payload.feedback_id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $json.body.payload.user_name }}",
+              "type": "string"
+            },
+            {
+              "id": "user-email",
+              "name": "userEmail",
+              "value": "={{ $json.body.payload.user_email }}",
+              "type": "string"
+            },
+            {
+              "id": "user-whatsapp",
+              "name": "userWhatsApp",
+              "value": "={{ $json.body.payload.whatsapp }}",
+              "type": "string"
+            },
+            {
+              "id": "category",
+              "name": "category",
+              "value": "={{ $json.body.payload.category }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ $json.body.payload.message }}",
+              "type": "string"
+            },
+            {
+              "id": "rating",
+              "name": "rating",
+              "value": "={{ $json.body.payload.rating }}",
+              "type": "number"
+            },
+            {
+              "id": "page-context",
+              "name": "pageContext",
+              "value": "={{ $json.body.payload.page_context }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ $json.body.timestamp }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "format-feedback-data",
+      "name": "Format Feedback Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        710,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "to-email",
+              "name": "toEmail",
+              "value": "={{ $json.body.payload.to_email }}",
+              "type": "string"
+            },
+            {
+              "id": "to-name",
+              "name": "toName",
+              "value": "={{ $json.body.payload.to_name }}",
+              "type": "string"
+            },
+            {
+              "id": "feedback-id",
+              "name": "feedbackId",
+              "value": "={{ $json.body.payload.feedback_id }}",
+              "type": "number"
+            },
+            {
+              "id": "category",
+              "name": "category",
+              "value": "={{ $json.body.payload.category }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ $json.body.payload.message }}",
+              "type": "string"
+            },
+            {
+              "id": "rating",
+              "name": "rating",
+              "value": "={{ $json.body.payload.rating }}",
+              "type": "number"
+            },
+            {
+              "id": "submitted-at",
+              "name": "submittedAt",
+              "value": "={{ $json.body.payload.submitted_at }}",
+              "type": "string"
+            },
+            {
+              "id": "to-whatsapp",
+              "name": "toWhatsApp",
+              "value": "={{ $json.body.payload.to_whatsapp }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "format-response-data",
+      "name": "Format Response Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        710,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "={{ $json.category === 'bug' ? 'Thank You for Reporting This Issue' : ($json.category === 'feature' ? 'Thank You for Your Feature Suggestion' : 'Thank You for Your Feedback') }}",
+        "message": "=<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"></head><body style=\"margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#f8fafc;padding:40px 0;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);\"><tr><td style=\"background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:48px 40px;text-align:center;\"><div style=\"width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:14px;margin:0 auto 20px;line-height:56px;font-size:28px;\">&#9998;</div><h1 style=\"color:#ffffff;margin:0;font-size:26px;font-weight:700;letter-spacing:-0.5px;\">Thank You!</h1><p style=\"color:rgba(255,255,255,0.7);margin:10px 0 0;font-size:15px;\">Your feedback helps us build a better experience</p></td></tr><tr><td style=\"padding:44px 40px;\"><p style=\"color:#1e293b;font-size:17px;margin:0 0 8px;\">Hello <strong>{{ $json.toName }}</strong>,</p>{{ $json.category === 'bug' ? '<p style=\"color:#64748b;font-size:15px;line-height:1.75;margin:0 0 28px;\">Thank you for taking the time to report this issue. Your feedback helps us identify and fix problems to improve the experience for everyone.</p>' : ($json.category === 'feature' ? '<p style=\"color:#64748b;font-size:15px;line-height:1.75;margin:0 0 28px;\">Thank you for sharing your feature suggestion! We love hearing ideas from our users, and your input helps us shape the future of AI Chatbot.</p>' : '<p style=\"color:#64748b;font-size:15px;line-height:1.75;margin:0 0 28px;\">Thank you for sharing your thoughts with us. Your feedback is invaluable in helping us improve and deliver a better experience.</p>') }}<table width=\"100%\" style=\"background-color:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;\"><tr><td style=\"padding:24px 28px;\"><p style=\"color:#64748b;font-size:13px;font-weight:700;margin:0 0 16px;text-transform:uppercase;letter-spacing:0.8px;\">Feedback Summary</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"padding:8px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;\">Category</td><td style=\"padding:8px 0;color:#1e293b;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #e2e8f0;text-transform:capitalize;\">{{ $json.category }}</td></tr>{{ $json.rating ? '<tr><td style=\"padding:8px 0;color:#64748b;font-size:14px;border-bottom:1px solid #e2e8f0;\">Rating</td><td style=\"padding:8px 0;color:#f59e0b;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #e2e8f0;\">' + '\u2605'.repeat($json.rating) + '\u2606'.repeat(5 - $json.rating) + '</td></tr>' : '' }}<tr><td style=\"padding:8px 0;color:#64748b;font-size:14px;\">Submitted</td><td style=\"padding:8px 0;color:#1e293b;font-size:14px;font-weight:600;text-align:right;\">{{ $json.submittedAt }}</td></tr></table></td></tr></table><table width=\"100%\" style=\"background-color:#eff6ff;border-radius:12px;border:1px solid #bfdbfe;margin-bottom:28px;\"><tr><td style=\"padding:24px 28px;\"><p style=\"color:#1d4ed8;font-size:13px;font-weight:700;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.5px;\">Your Message</p><p style=\"color:#334155;font-size:14px;line-height:1.7;margin:0;padding-left:16px;border-left:3px solid #3b82f6;\">{{ $json.message }}</p></td></tr></table>{{ $json.category === 'bug' ? '<table width=\"100%\" style=\"margin-bottom:24px;\"><tr><td><p style=\"color:#1e293b;font-size:15px;font-weight:700;margin:0 0 14px;\">What Happens Next</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; Our team will review the issue you reported</td></tr><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; We will investigate and work on a fix</td></tr><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; Updates will be included in future releases</td></tr></table></td></tr></table>' : ($json.category === 'feature' ? '<table width=\"100%\" style=\"margin-bottom:24px;\"><tr><td><p style=\"color:#1e293b;font-size:15px;font-weight:700;margin:0 0 14px;\">What Happens Next</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; Your suggestion has been added to our roadmap</td></tr><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; We evaluate features based on user interest</td></tr><tr><td style=\"padding:7px 0;color:#64748b;font-size:14px;line-height:1.6;\">&#10003;&nbsp; We will notify you if this feature gets implemented</td></tr></table></td></tr></table>' : '') }}<p style=\"color:#94a3b8;font-size:14px;line-height:1.7;margin:0 0 32px;\">If you have any additional thoughts, feel free to reply to this email. We read every message.</p><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\"><a href=\"http://localhost:8000\" style=\"display:inline-block;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#ffffff;text-decoration:none;padding:14px 44px;border-radius:10px;font-size:15px;font-weight:600;letter-spacing:0.2px;\">Continue Chatting &rarr;</a></td></tr></table></td></tr><tr><td style=\"background-color:#f8fafc;padding:28px 40px;border-top:1px solid #e2e8f0;\"><p style=\"color:#94a3b8;font-size:12px;margin:0;text-align:center;line-height:1.6;\">This is an automated message from AI Chatbot. If you have questions, reply to this email.</p><p style=\"color:#cbd5e1;font-size:12px;margin:8px 0 0;text-align:center;\">&copy; 2026 AI Chatbot. All rights reserved.</p></td></tr></table></td></tr></table></body></html>",
+        "fromEmail": "aitzazhassan16454@gmail.com",
+        "toEmail": "={{ $json.toEmail }}",
+        "emailFormat": "html",
+        "options": {}
+      },
+      "id": "send-response-email",
+      "name": "Send Thank You Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        950,
+        450
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "fDgAUoIsnzcWTzvD",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "from": "={{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "to": "={{ 'whatsapp:' + $json.toWhatsApp }}",
+        "body": "=*Thank You for Your Feedback!*\n\nHello {{ $json.toName }},\n\n{{ $json.category === 'bug' ? 'Thank you for reporting this issue. We appreciate your help in making our service better.' : ($json.category === 'feature' ? 'Thank you for your feature suggestion! We love hearing ideas from our users.' : 'Thank you for sharing your feedback with us. It helps us improve!') }}\n\n*Feedback Details:*\n- Category: {{ $json.category }}\n- Rating: {{ $json.rating ? '\u2605'.repeat($json.rating) + '\u2606'.repeat(5 - $json.rating) : 'Not provided' }}\n- Submitted: {{ $json.submittedAt }}\n\n*Your Message:*\n{{ $json.message }}\n\nWe hope you continue to enjoy using AI Chatbot!\n\n_This is an automated message._",
+        "options": {}
+      },
+      "id": "send-whatsapp-response",
+      "name": "Send WhatsApp Thank You",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 2,
+      "position": [
+        1190,
+        550
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "YOUR_TWILIO_CREDENTIAL_ID",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=*New Feedback Received*\n\n*From:* {{ $json.userName }} ({{ $json.userEmail }})\n*Category:* {{ $json.category }}\n*Rating:* {{ $json.rating ? '\u2605'.repeat($json.rating) + '\u2606'.repeat(5 - $json.rating) : 'Not provided' }}\n*Page:* {{ $json.pageContext }}\n*Time:* {{ $json.timestamp }}\n\n*Message:*\n{{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-notify",
+      "name": "Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        950,
+        200
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "subject": "=New Feedback: {{ $json.category }} from {{ $json.userName }}",
+        "message": "=<h2>New Feedback Received</h2><p><strong>From:</strong> {{ $json.userName }} ({{ $json.userEmail }})</p><p><strong>Category:</strong> {{ $json.category }}</p><p><strong>Rating:</strong> {{ $json.rating ? '\u2605'.repeat($json.rating) + '\u2606'.repeat(5 - $json.rating) : 'Not provided' }}</p><p><strong>Page:</strong> {{ $json.pageContext }}</p><p><strong>Time:</strong> {{ $json.timestamp }}</p><hr><p><strong>Message:</strong></p><p>{{ $json.message }}</p>",
+        "fromEmail": "aitzazhassan16454@gmail.com",
+        "toEmail": "={{ $env.FEEDBACK_EMAIL }}",
+        "emailFormat": "html",
+        "options": {}
+      },
+      "id": "admin-email-notify",
+      "name": "Admin Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        950,
+        300
+      ],
+      "disabled": true,
+      "credentials": {
+        "smtp": {
+          "id": "fDgAUoIsnzcWTzvD",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Feedback received\" } }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1190,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event }}",
+              "operation": "equals",
+              "value2": "feedback-response"
+            }
+          ]
+        }
+      },
+      "id": "if-feedback-response",
+      "name": "IF - Feedback Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        470,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event }}",
+              "operation": "equals",
+              "value2": "feedback"
+            }
+          ]
+        }
+      },
+      "id": "if-feedback",
+      "name": "IF - Feedback",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        470,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF - Feedback",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - Feedback Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Feedback Data": {
+      "main": [
+        [
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Admin Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response Data": {
+      "main": [
+        [
+          {
+            "node": "Send Thank You Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send WhatsApp Thank You",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admin Email Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Thank You Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Thank You": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Feedback": {
+      "main": [
+        [
+          {
+            "node": "Format Feedback Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "IF - Feedback Response": {
+      "main": [
+        [
+          {
+            "node": "Format Response Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

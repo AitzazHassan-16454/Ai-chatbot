@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www
+      - ./storage/app:/var/www/storage/app
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/database/database.sqlite
+    depends_on:
+      - queue
+    restart: unless-stopped
+
+  queue:
+    build: .
+    command: php artisan queue:listen --tries=3 --timeout=0
+    volumes:
+      - .:/var/www
+      - ./storage/app:/var/www/storage/app
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/database/database.sqlite
+      - QUEUE_CONNECTION=database
+    restart: unless-stopped
+
+  vite:
+    image: node:18
+    working_dir: /var/www
+    command: npm run dev -- --host
+    volumes:
+      - .:/var/www
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
