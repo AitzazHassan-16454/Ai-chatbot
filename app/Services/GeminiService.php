@@ -88,11 +88,13 @@ class GeminiService
             return ['error' => 'Empty response from AI.', 'status' => 500];
         }
 
-        $tokensUsed = $data['usageMetadata']['totalTokenCount'] ?? 0;
+        $usageMetadata = $data['usageMetadata'] ?? [];
+        $tokensUsed = $usageMetadata['totalTokenCount'] ?? 0;
 
         return [
             'reply' => $reply,
             'tokens_used' => $tokensUsed,
+            'usage_metadata' => $usageMetadata,
         ];
     }
 
@@ -175,6 +177,7 @@ class GeminiService
 
                         if (isset($chunk['usageMetadata'])) {
                             $usageMetadata = $chunk['usageMetadata'];
+                            yield ['type' => 'usage', 'usage_metadata' => $usageMetadata];
                         }
 
                         if (isset($chunk['candidates'][0]['finishReason'])) {
@@ -234,6 +237,11 @@ class GeminiService
     public function isConfigured(): bool
     {
         return ! empty($this->apiKey);
+    }
+
+    public function model(): string
+    {
+        return $this->model;
     }
 
     private function friendlyError(?int $status, string $fallback = 'Something went wrong. Please try again.'): string

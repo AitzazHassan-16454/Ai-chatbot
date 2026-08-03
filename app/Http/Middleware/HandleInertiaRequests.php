@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Resources\UserResource;
 use App\Models\SystemUsage;
+use App\Models\TokenUsageLog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -26,6 +27,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? (new UserResource($request->user()))->toArray($request) : null,
             ],
             'api_status' => $systemUsage->apiStatusArray(),
+            'token_usage' => [
+                'total_tokens' => TokenUsageLog::totalTokens(),
+            ],
         ];
     }
 }

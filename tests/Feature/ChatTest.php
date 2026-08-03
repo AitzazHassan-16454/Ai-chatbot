@@ -27,7 +27,11 @@ class ChatTest extends TestCase
             'candidates' => [
                 ['content' => ['parts' => [['text' => $text]]]],
             ],
-            'usageMetadata' => ['totalTokenCount' => $tokens],
+            'usageMetadata' => [
+                'promptTokenCount' => (int) round($tokens / 2),
+                'candidatesTokenCount' => (int) round($tokens / 2),
+                'totalTokenCount' => $tokens,
+            ],
         ];
     }
 
@@ -146,6 +150,42 @@ class ChatTest extends TestCase
 
         $this->assertEquals(0, Conversation::count());
         $this->assertEquals(0, Message::count());
+    }
+
+    public function test_every_api_call_is_logged_with_token_breakdown(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response($this->geminiResponse('AI reply', 20)),
+        ]);
+
+        $this->actingAs($user)->postJson('/chat', ['message' => 'Hello AI'])->assertOk();
+
+        $this->assertDatabaseHas('token_usage_logs', [
+            'user_id' => $user->id,
+            'endpoint' => 'generateContent',
+            'model' => 'gemini-2.5-flash',
+            'prompt_tokens' => 10,
+            'candidates_tokens' => 10,
+            'total_tokens' => 20,
+            'status' => 200,
+        ]);
+    }
+
+    public function test_token_log_records_failed_api_call(): void
+    {
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response(['error' => 'quota'], 429),
+        ]);
+
+        $this->postJson('/chat', ['message' => 'Hello']);
+
+        $this->assertDatabaseHas('token_usage_logs', [
+            'endpoint' => 'generateContent',
+            'status' => 429,
+            'total_tokens' => 0,
+        ]);
     }
 
     public function test_user_token_limit_is_enforced(): void

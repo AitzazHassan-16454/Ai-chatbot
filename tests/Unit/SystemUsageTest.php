@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\SystemUsage;
+use App\Models\TokenUsageLog;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -10,6 +11,28 @@ use Tests\TestCase;
 class SystemUsageTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_total_tokens_sums_all_users_and_endpoints(): void
+    {
+        TokenUsageLog::create([
+            'endpoint' => 'generateContent',
+            'prompt_tokens' => 10,
+            'candidates_tokens' => 20,
+            'total_tokens' => 30,
+        ]);
+        TokenUsageLog::create([
+            'endpoint' => 'streamGenerateContent',
+            'prompt_tokens' => 5,
+            'candidates_tokens' => 15,
+            'total_tokens' => 20,
+        ]);
+        TokenUsageLog::create([
+            'endpoint' => 'cv_parse',
+            'total_tokens' => 50,
+        ]);
+
+        $this->assertSame(100, TokenUsageLog::totalTokens());
+    }
 
     public function test_get_usage_creates_record_if_none_exists(): void
     {

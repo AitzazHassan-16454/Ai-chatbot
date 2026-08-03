@@ -6,6 +6,8 @@ use App\Http\Requests\AskRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\SystemUsage;
+use App\Models\TokenUsageLog;
+use App\Models\User;
 use App\Services\GeminiService;
 use App\Services\N8nService;
 use Illuminate\Http\Request;
@@ -66,6 +68,7 @@ class ChatController extends Controller
 
             if (isset($result['error'])) {
                 $this->handleError($result, $user, $message, $cleanAttachments, $conversation, $systemUsage);
+                $this->logTokenUsage($user, $conversation, 'generateContent', $gemini->model(), $result, $result['status'] ?? 500);
                 return response()->json([
                     'error' => $result['error'],
                     'api_status' => $systemUsage->fresh()->apiStatusArray(),
@@ -74,6 +77,7 @@ class ChatController extends Controller
 
             $reply = $result['reply'];
             $tokensUsed = $result['tokens_used'];
+            $this->logTokenUsage($user, $conversation, 'generateContent', $gemini->model(), $result, 200);
 
             if ($conversation) {
                 Message::create([
@@ -170,7 +174,7 @@ class ChatController extends Controller
         $fullReply = '';
         $tokensUsed = 0;
 
-        return response()->stream(function () use ($stream, &$fullReply, &$tokensUsed, $user, $message, $cleanAttachments, $conversation, $systemUsage) {
+        return response()->stream(function () use ($stream, &$fullReply, &$tokensUsed, $user, $message, $cleanAttachments, $conversation, $systemUsage, $gemini) {
             set_time_limit(0);
 
             foreach ($stream as $chunk) {
@@ -186,6 +190,7 @@ class ChatController extends Controller
                         'error' => $chunk['message'],
                         'status' => $chunk['status'] ?? 500,
                     ], $user, $message, $cleanAttachments, $conversation, $systemUsage);
+                    $this->logTokenUsage($user, $conversation, 'streamGenerateContent', $gemini->model(), $chunk, $chunk['status'] ?? 500);
 
                     echo "event: error\ndata: " . json_encode([
                         'message' => $chunk['message'],
@@ -199,6 +204,7 @@ class ChatController extends Controller
                     return;
                 } elseif ($chunk['type'] === 'done') {
                     $tokensUsed = $chunk['tokens_used'] ?? 0;
+                    $this->logTokenUsage($user, $conversation, 'streamGenerateContent', $gemini->model(), $chunk, 200);
                 }
             }
 
@@ -207,6 +213,7 @@ class ChatController extends Controller
                     'error' => 'API quota exceeded.',
                     'status' => 429,
                 ], $user, $message, $cleanAttachments, $conversation, $systemUsage);
+                $this->logTokenUsage($user, $conversation, 'streamGenerateContent', $gemini->model(), [], 429);
 
                 echo "event: error\ndata: " . json_encode([
                     'message' => 'API quota exceeded.',
@@ -270,6 +277,8 @@ class ChatController extends Controller
             echo "event: done\ndata: " . json_encode([
                 'conversation_id' => $conversation?->id,
                 'tokens_used' => $tokensUsed,
+                'usage_metadata' => $chunk['usage_metadata'] ?? null,
+                'system_tokens_used' => TokenUsageLog::totalTokens(),
                 'user_tokens_remaining' => $user ? $user->tokensRemaining() : null,
                 'api_status' => $systemUsage->fresh()->apiStatusArray(),
             ]) . "\n\n";
@@ -400,5 +409,32 @@ class ChatController extends Controller
             'error' => $error,
             'error_code' => $status,
         ]);
+    }
+
+    private function logTokenUsage(
+        ?User $user,
+        ?Conversation $conversation,
+        string $endpoint,
+        string $model,
+        array $data = [],
+        ?int $status = null
+    ): void {
+        try {
+            $usageMetadata = $data['usage_metadata'] ?? [];
+
+            TokenUsageLog::record([
+                'user_id' => $user?->id,
+                'conversation_id' => $conversation?->id,
+                'endpoint' => $endpoint,
+                'model' => $model,
+                'prompt_tokens' => $usageMetadata['promptTokenCount'] ?? 0,
+                'candidates_tokens' => $usageMetadata['candidatesTokenCount'] ?? 0,
+                'thoughts_tokens' => $usageMetadata['thoughtsTokenCount'] ?? 0,
+                'total_tokens' => $data['tokens_used'] ?? $usageMetadata['totalTokenCount'] ?? 0,
+                'status' => $status,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Token usage log failed: ' . $e->getMessage());
+        }
     }
 }

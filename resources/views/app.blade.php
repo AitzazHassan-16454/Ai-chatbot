@@ -8,14 +8,7 @@
     @vite('resources/js/app.js')
     @inertiaHead
 </head>
-<body class="h-full m-0 p-0 overflow-hidden antialiased">
-    <div class="nova-bg">
-        <div class="nova-orb nova-orb-1"></div>
-        <div class="nova-orb nova-orb-2"></div>
-        <div class="nova-orb nova-orb-3"></div>
-        <div class="nova-orb nova-orb-4"></div>
-    </div>
-    <div class="nova-vignette"></div>
+<body class="h-full m-0 p-0 antialiased">
     @inertia
 </body>
 </html>

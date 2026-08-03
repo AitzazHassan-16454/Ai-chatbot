@@ -1,114 +1,38 @@
 <template>
-    <div class="h-screen w-screen flex bg-transparent overflow-hidden font-sans">
+    <div class="h-screen w-screen flex bg-oc-bg text-oc-text overflow-hidden font-sans">
 
         <div
             v-if="sidebarOpen && isMobile"
-            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+            class="fixed inset-0 bg-black/60 z-40 md:hidden"
             @click="sidebarOpen = false"
         ></div>
 
-        <aside
-            v-if="user"
-            :class="[
-                sidebarOpen ? 'w-[288px]' : 'w-0',
-                isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'
-            ]"
-            class="shrink-0 flex flex-col transition-all duration-300 overflow-hidden p-3 pl-3"
-        >
-            <div class="w-[264px] h-full flex flex-col glass-strong rounded-2xl overflow-hidden">
-                <div class="px-3 pt-3">
-                    <a href="/" class="flex items-center gap-2.5 px-3 py-2 mb-1 rounded-xl hover:bg-white/[0.05] transition-colors">
-                        <div class="w-7 h-7 rounded-lg glass flex items-center justify-center">
-                            <NovaIcon :size="16" />
-                        </div>
-                        <span class="text-[14px] font-semibold tracking-tight nova-gradient-text">Nova</span>
-                        <span class="nova-chip ml-auto">AI</span>
-                    </a>
-                </div>
-                <div class="p-3 pt-2 border-b border-white/[0.06] space-y-1.5">
-                    <button
-                        @click="newChat"
-                        class="nova-btn-primary w-full"
-                    >
-                        <i class="fa-solid fa-plus text-[11px]"></i>
-                        <span>New chat</span>
-                    </button>
-                    <a href="/profile" class="nova-btn-ghost w-full">
-                        <i class="fa-solid fa-briefcase text-[11px]"></i>
-                        <span>Job Alerts</span>
-                    </a>
-                </div>
-
-                <div class="flex-1 overflow-y-auto scrollbar-glass px-3 pt-4 pb-3">
-                    <p v-if="conversations.length" class="px-3 pb-2 text-[10px] font-medium uppercase tracking-widest text-[#94a3b8]/50">Recent</p>
-                    <div v-if="conversations.length === 0" class="text-center text-[12px] text-[#94a3b8]/50 mt-8 px-4">
-                        No conversations yet
-                    </div>
-                    <div v-for="conv in conversations" :key="conv.id">
-                        <button
-                            @click="loadConversation(conv)"
-                            class="group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] transition-colors cursor-pointer text-left"
-                            :class="activeConversationId === conv.id ? 'bg-[#c084fc]/10 border border-[#c084fc]/20 text-[#eef1f8]' : 'text-[#94a3b8] hover:bg-white/[0.05] hover:text-[#eef1f8]'"
-                        >
-                            <i class="fa-regular fa-comment-dots text-[11px] shrink-0" :class="activeConversationId === conv.id ? 'text-[#c084fc]' : ''"></i>
-                            <span class="truncate flex-1">{{ conv.title }}</span>
-                            <span
-                                @click.stop="deleteConversation(conv)"
-                                class="shrink-0 opacity-0 group-hover:opacity-100 text-[#94a3b8] hover:text-[#f472b6] transition-all cursor-pointer"
-                            >
-                                <i class="fa-solid fa-xmark text-[11px]"></i>
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <div v-if="user" class="p-3 border-t border-white/[0.06]">
-                    <a href="/profile" class="px-3 flex items-center gap-3 hover:bg-white/[0.06] rounded-xl py-2 transition cursor-pointer">
-                        <div class="w-8 h-8 rounded-full nova-gradient flex items-center justify-center shrink-0">
-                            <span class="text-[12px] font-semibold text-white">{{ user.name.charAt(0).toUpperCase() }}</span>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-[12px] font-medium text-[#eef1f8] truncate">{{ user.name }}</div>
-                            <div class="text-[10px] text-[#94a3b8]/70 truncate">{{ user.email }}</div>
-                        </div>
-                        <i class="fa-solid fa-arrow-right text-[10px] text-[#94a3b8] ml-auto shrink-0"></i>
-                    </a>
-                </div>
-            </div>
-        </aside>
-
         <div class="flex-1 flex flex-col min-w-0">
 
-            <header class="shrink-0 px-4 sm:px-6 py-3">
-                <div class="max-w-3xl mx-auto flex items-center justify-between">
-                    <div class="flex items-center gap-2 sm:gap-3">
+            <header class="shrink-0 h-12 px-4 sm:px-6 border-b border-oc-border flex items-center">
+                <div class="max-w-3xl mx-auto w-full flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                         <button
                             v-if="user"
                             @click="sidebarOpen = !sidebarOpen"
-                            class="w-9 h-9 rounded-xl glass flex items-center justify-center hover:bg-white/[0.08] transition cursor-pointer"
+                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
+                            :title="sidebarOpen ? 'Hide sessions' : 'Show sessions'"
                         >
-                            <i class="fa-solid fa-bars text-[15px] text-[#94a3b8]"></i>
+                            <i class="fa-solid fa-bars text-[14px] text-oc-muted"></i>
                         </button>
-                        <div class="flex items-center gap-2.5 sm:gap-3">
-                            <div class="relative w-9 h-9 rounded-xl glass flex items-center justify-center nova-glow">
-                                <div class="absolute inset-0 rounded-xl nova-gradient opacity-15 blur-md"></div>
-                                <div class="relative">
-                                    <NovaIcon :size="20" />
-                                </div>
+                        <div class="flex items-center gap-1.5 text-[13px] min-w-0">
+                            <div class="w-6 h-6 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
+                                <NovaIcon :size="13" />
                             </div>
-                            <div>
-                                <h1 class="text-[16px] font-semibold text-[#eef1f8] tracking-tight leading-none nova-gradient-text">Nova</h1>
-                                <p class="text-[10px] sm:text-[11px] text-[#94a3b8] mt-1.5 flex items-center gap-1.5">
-                                    <span class="w-1 h-1 rounded-full bg-emerald-400/80"></span>
-                                    Gemini 2.5 Flash
-                                </p>
-                            </div>
+                            <span class="text-oc-text font-semibold tracking-tight">Nova</span>
+                            <i class="fa-solid fa-chevron-right text-[9px] text-oc-faint shrink-0"></i>
+                            <span class="text-oc-muted truncate">{{ activeConversationTitle }}</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 shrink-0">
                         <div
                             v-if="apiStatus"
-                            class="hidden sm:flex items-center gap-2 mr-2 px-3 py-1.5 rounded-full glass transition-colors"
+                            class="hidden md:flex items-center gap-2 px-2.5 h-7 rounded-lg bg-oc-surface border transition-colors"
                             :class="statusStyles.border"
                         >
                             <div class="w-1.5 h-1.5 rounded-full" :class="statusStyles.dot"></div>
@@ -117,38 +41,33 @@
                             </span>
                         </div>
                         <template v-if="user">
-                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl nova-gradient flex items-center justify-center cursor-pointer transition" :title="user.name">
-                                <span class="text-[12px] sm:text-[13px] font-semibold text-white">{{ user.name.charAt(0).toUpperCase() }}</span>
+                            <div class="w-7 h-7 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center cursor-pointer" :title="user.name">
+                                <span class="text-[11px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
                             </div>
-                            <form @submit.prevent="logout" class="inline">
-                                <button type="submit" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl glass flex items-center justify-center hover:bg-white/[0.08] transition cursor-pointer" title="Sign out">
-                                    <i class="fa-solid fa-right-from-bracket text-[12px] sm:text-[13px] text-[#94a3b8]"></i>
+                            <form @submit.prevent="logout" class="hidden sm:inline">
+                                <button type="submit" class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer" title="Sign out">
+                                    <i class="fa-solid fa-arrow-right-from-bracket text-[12px] text-oc-muted"></i>
                                 </button>
                             </form>
                         </template>
                         <template v-else>
-                            <a href="/login" class="px-4 py-2 rounded-xl glass text-[12px] sm:text-[13px] text-[#eef1f8] hover:bg-white/[0.08] transition-colors">
-                                Sign in
-                            </a>
+                            <a href="/login" class="oc-btn oc-btn-ghost">Sign in</a>
                         </template>
                     </div>
                 </div>
             </header>
 
-            <div ref="messagesRef" class="flex-1 overflow-y-auto scrollbar-glass">
+            <div ref="messagesRef" class="flex-1 overflow-y-auto scrollbar-thin">
 
                 <div v-if="!messages.length && !loading" class="h-full flex flex-col items-center justify-center px-5 sm:px-8">
-                    <div class="text-center mb-6 sm:mb-8">
-                        <div class="relative w-16 h-16 mx-auto mb-5 rounded-2xl glass flex items-center justify-center nova-glow">
-                            <div class="absolute inset-0 rounded-2xl nova-gradient opacity-20 blur-lg"></div>
-                            <div class="relative">
-                                <NovaIcon :size="30" />
-                            </div>
+                    <div class="text-center mb-8">
+                        <div class="w-12 h-12 mx-auto mb-5 rounded-xl bg-oc-raised border border-oc-border flex items-center justify-center">
+                            <NovaIcon :size="24" />
                         </div>
-                        <h2 class="text-[22px] sm:text-[26px] font-semibold text-[#eef1f8] tracking-tight mb-2">
-                            How can <span class="nova-gradient-text">Nova</span> help?
+                        <h2 class="text-[22px] sm:text-[26px] font-semibold text-oc-text tracking-tight mb-2">
+                            How can <span class="text-oc-primary-strong">Nova</span> help?
                         </h2>
-                        <p class="text-[12px] sm:text-[13px] text-[#94a3b8]">
+                        <p class="text-[13px] text-oc-muted">
                             {{ user ? 'Ask anything — I think, write, and speak back.' : 'Sign in to save your chat history, or continue as a guest.' }}
                         </p>
                     </div>
@@ -157,29 +76,29 @@
                             v-for="suggestion in suggestions"
                             :key="suggestion.label"
                             @click="useSuggestion(suggestion.prompt)"
-                            class="group text-left px-4 py-3.5 rounded-xl glass glass-hover hover:bg-white/[0.07] hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-16px_rgba(129,140,248,0.4)] cursor-pointer transition-all"
+                            class="group text-left px-4 py-3.5 rounded-xl bg-oc-surface border border-oc-border hover:bg-oc-hover hover:border-oc-border-strong transition-colors cursor-pointer"
                         >
-                            <div class="w-7 h-7 rounded-lg nova-gradient-soft flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                <i :class="suggestion.icon" class="text-[11px] nova-gradient-text"></i>
+                            <div class="w-7 h-7 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center mb-2 group-hover:border-oc-border-strong">
+                                <i :class="suggestion.icon" class="text-[11px] text-oc-primary"></i>
                             </div>
-                            <span class="text-[12px] text-[#cbd5e1] group-hover:text-[#eef1f8] transition-colors">{{ suggestion.label }}</span>
+                            <span class="text-[12px] text-oc-muted group-hover:text-oc-text transition-colors">{{ suggestion.label }}</span>
                         </button>
                     </div>
                 </div>
 
                 <div v-else class="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                    <ChatMessage v-for="(msg, i) in messages" :key="i" :msg="msg" :index="i" />
+                    <ChatMessage
+                        v-for="(msg, i) in messages"
+                        :key="i"
+                        :msg="msg"
+                        :index="i"
+                        :streaming="loading && i === messages.length - 1 && msg.role === 'assistant'"
+                    />
 
-                    <div v-if="loading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.text" class="flex justify-start msg-in mb-5 sm:mb-6">
-                        <div class="flex gap-3 sm:gap-3.5">
-                            <div class="shrink-0 mt-0.5">
-                                <NovaIcon :size="24" class="sm:w-6 sm:h-6" />
-                            </div>
-                            <div class="flex gap-1.5 px-1 py-2">
-                                <span class="nova-dot w-1.5 h-1.5 bg-[#a5b4fc] rounded-full" style="animation-delay:0s"></span>
-                                <span class="nova-dot w-1.5 h-1.5 bg-[#c084fc] rounded-full" style="animation-delay:0.15s"></span>
-                                <span class="nova-dot w-1.5 h-1.5 bg-[#f472b6] rounded-full" style="animation-delay:0.3s"></span>
-                            </div>
+                    <div v-if="loading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.text" class="flex justify-start mb-6 msg-in">
+                        <div class="flex items-center gap-2 text-oc-faint text-[13px] font-medium min-h-5">
+                            <ProgressDots :size="16" class="text-oc-muted" />
+                            <span>Thinking...</span>
                         </div>
                     </div>
                 </div>
@@ -187,98 +106,267 @@
 
             <StatusBanners :user="user" :messages="messages" :apiStatus="apiStatus" />
 
-            <div class="shrink-0 px-4 sm:px-6 pb-4 sm:pb-5 pt-2">
+            <div class="shrink-0 px-4 sm:px-6 pb-4 sm:pb-5 pt-1">
                 <form @submit.prevent="sendMessage" class="max-w-3xl mx-auto" @dragover.prevent="dragActive = true" @dragleave.prevent="dragActive = false" @drop.prevent="handleDrop">
-                    <div v-if="dragActive" class="mb-3 glass rounded-2xl border-2 border-dashed border-[#a5b4fc]/50 bg-[#a5b4fc]/[0.06] p-8 flex flex-col items-center justify-center transition-all">
-                        <i class="fa-solid fa-cloud-arrow-up nova-gradient-text text-2xl mb-2"></i>
-                        <p class="text-[13px] text-[#cbd5e1]">Drop files here</p>
-                    </div>
 
-                    <div v-if="pendingFile" class="mb-3">
-                        <div class="relative inline-block">
-                            <img v-if="pendingFile.isImage" :src="pendingFile.preview" class="h-20 w-20 object-cover rounded-xl border border-white/10 glass" />
-                            <div v-else class="h-20 w-20 rounded-xl glass flex flex-col items-center justify-center gap-1">
-                                <i :class="pendingFile.icon" class="text-[18px]" :style="{ color: pendingFile.iconColor }"></i>
-                                <p class="text-[8px] text-[#94a3b8] truncate max-w-[70px] px-1">{{ pendingFile.ext }}</p>
+                    <div
+                        class="relative min-h-[96px] w-full overflow-clip rounded-xl bg-oc-surface transition-shadow duration-200 shadow-[0_2px_4px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.3),0_0_0_0.5px_rgba(255,255,255,0.16),0_-0.5px_0_rgba(255,255,255,0.06)] focus-within:shadow-[0_8px_16px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.3),0_0_0_0.5px_rgba(255,255,255,0.16),0_-0.5px_0_rgba(255,255,255,0.06)]"
+                        :class="dragActive ? 'border border-oc-primary border-dashed' : ''"
+                    >
+                        <div v-if="dragActive" class="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-xl bg-oc-surface/90">
+                            <p class="text-[13px] text-oc-text">Drop files to attach</p>
+                        </div>
+
+                        <div v-if="pendingFile" class="px-4 pt-3">
+                            <div class="relative inline-block">
+                                <img v-if="pendingFile.isImage" :src="pendingFile.preview" class="h-16 w-16 object-cover rounded-lg border border-oc-border bg-oc-raised" />
+                                <div v-else class="h-16 w-16 rounded-lg bg-oc-raised border border-oc-border flex flex-col items-center justify-center gap-1">
+                                    <i :class="pendingFile.icon" class="text-[16px]" :style="{ color: pendingFile.iconColor }"></i>
+                                    <p class="text-[8px] text-oc-faint truncate max-w-[58px] px-1">{{ pendingFile.ext }}</p>
+                                </div>
+                                <button
+                                    @click="pendingFile = null"
+                                    type="button"
+                                    class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-oc-raised border border-oc-border flex items-center justify-center transition cursor-pointer hover:text-oc-error"
+                                >
+                                    <i class="fa-solid fa-xmark text-[9px] text-oc-text"></i>
+                                </button>
+                                <div class="absolute bottom-0 left-0 right-0 bg-black/60 rounded-b-lg px-1.5 py-0.5">
+                                    <p class="text-[9px] text-oc-text truncate text-center">{{ pendingFile.name }}</p>
+                                </div>
                             </div>
-                            <button
-                                @click="pendingFile = null"
-                                type="button"
-                                class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full glass-strong flex items-center justify-center transition cursor-pointer hover:text-red-400"
+                        </div>
+
+                        <input
+                            ref="fileInput"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,application/pdf,text/plain,text/csv"
+                            class="hidden"
+                            @change="handleFileSelect"
+                        >
+
+                        <div class="relative min-h-[60px]">
+                            <textarea
+                                ref="textareaRef"
+                                v-model="input"
+                                :disabled="loading || isSystemBusy"
+                                rows="1"
+                                spellcheck="false"
+                                class="relative z-10 block w-full min-h-[60px] max-h-[180px] resize-none overflow-y-auto whitespace-pre-wrap bg-transparent px-4 pt-4 pb-2 text-[13px] font-[440] leading-5 text-oc-text focus:outline-none disabled:opacity-50"
+                                @input="autoResize"
+                                @keydown="handleKeydown"
+                            ></textarea>
+
+                            <div
+                                v-if="!input && !pendingFile"
+                                class="pointer-events-none absolute inset-x-0 top-0 px-4 pt-4 text-[13px] font-[440] leading-5 text-oc-faint"
                             >
-                                <i class="fa-solid fa-xmark text-[9px] text-[#eef1f8]"></i>
-                            </button>
-                            <div class="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-md rounded-b-xl px-1.5 py-0.5">
-                                <p class="text-[9px] text-[#eef1f8] truncate text-center">{{ pendingFile.name }}</p>
+                                {{ isSystemBusy ? 'System busy, try later...' : 'Ask anything...' }}
                             </div>
+                        </div>
+
+                        <div class="flex h-11 items-center px-2">
+                            <div class="flex min-w-0 flex-1 items-center gap-1">
+                                <button
+                                    type="button"
+                                    @click="$refs.fileInput.click()"
+                                    :disabled="loading || isSystemBusy"
+                                    class="size-7 rounded-md flex items-center justify-center shrink-0 transition cursor-pointer hover:bg-oc-hover disabled:opacity-40"
+                                    :title="isSystemBusy ? 'System busy' : 'Attach files'"
+                                >
+                                    <i class="fa-solid fa-paperclip text-[13px] text-oc-muted"></i>
+                                </button>
+
+                                <div
+                                    class="flex h-7 max-w-[220px] items-center gap-1.5 rounded-md px-2 text-[12px] font-[440] text-oc-muted"
+                                    :title="activeModel.name"
+                                >
+                                    <span class="text-oc-primary shrink-0">
+                                        <NovaIcon :size="12" />
+                                    </span>
+                                    <span class="truncate">{{ activeModel.name }}</span>
+                                </div>
+
+                                <button
+                                    v-if="isSpeechSupported"
+                                    type="button"
+                                    @click="toggleRecording"
+                                    :disabled="loading || isSystemBusy"
+                                    :class="isRecording ? 'bg-oc-error/15 text-oc-error nova-recording' : 'text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                                    class="size-7 rounded-md flex items-center justify-center shrink-0 transition cursor-pointer disabled:opacity-40"
+                                    :title="isRecording ? 'Stop recording' : 'Dictate your message'"
+                                >
+                                    <i :class="transcribing ? 'fa-solid fa-spinner fa-spin' : isRecording ? 'fa-solid fa-microphone-lines' : 'fa-solid fa-microphone'" class="text-[13px]"></i>
+                                </button>
+                            </div>
+
+                            <button
+                                v-if="loading"
+                                type="button"
+                                @click="stopGeneration"
+                                class="size-7 rounded-md p-[6px] flex items-center justify-center shrink-0 transition cursor-pointer active:scale-95 bg-oc-raised border border-oc-border text-oc-text hover:border-oc-border-strong"
+                                :title="'Stop generating'"
+                            >
+                                <i class="fa-solid fa-stop text-[11px]"></i>
+                            </button>
+                            <button
+                                v-else
+                                type="submit"
+                                :disabled="(!input.trim() && !pendingFile) || isSystemBusy"
+                                class="size-7 rounded-md p-[6px] flex items-center justify-center shrink-0 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                                :class="(!input.trim() && !pendingFile) || isSystemBusy ? 'bg-oc-raised border border-oc-border text-oc-faint' : 'text-oc-bg shadow-[0_1px_2px_rgba(0,0,0,0.4),0_0_0_0.5px_rgba(255,255,255,0.4),0_-0.5px_0_rgba(255,255,255,0.3)]'"
+                                :style="(!input.trim() && !pendingFile) || isSystemBusy ? '' : { backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, var(--color-oc-primary), var(--color-oc-primary))' }"
+                                :title="'Send message'"
+                            >
+                                <i class="fa-solid fa-arrow-up text-[11px]"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,application/pdf,text/plain,text/csv"
-                        class="hidden"
-                        @change="handleFileSelect"
-                    >
-                    <div class="flex items-end gap-2.5 sm:gap-3 glass rounded-2xl sm:rounded-3xl px-4 sm:px-5 py-2.5 sm:py-3 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.7)] transition-all duration-200 focus-within:border-[#818cf8]/40 focus-within:shadow-[0_0_0_1px_rgba(129,140,248,0.25),0_20px_60px_-24px_rgba(0,0,0,0.7)]">
-                        <button
-                            type="button"
-                            @click="$refs.fileInput.click()"
-                            :disabled="loading || isSystemBusy"
-                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition cursor-pointer hover:bg-white/[0.08] disabled:opacity-40"
-                            :title="isSystemBusy ? 'System busy' : 'Attach files'"
-                        >
-                            <i class="fa-solid fa-paperclip text-[13px] text-[#94a3b8]"></i>
-                        </button>
-                        <textarea
-                            ref="textareaRef"
-                            v-model="input"
-                            :placeholder="isSystemBusy ? 'System busy, try later...' : 'Enter a prompt here'"
-                            autocomplete="off"
-                            :disabled="loading || isSystemBusy"
-                            rows="1"
-                            class="flex-1 bg-transparent text-[#eef1f8] text-[13.5px] sm:text-[14.5px] placeholder-[#94a3b8]/60 focus:outline-none disabled:opacity-40 resize-none max-h-[150px] py-0.5 leading-[1.5]"
-                            @input="autoResize"
-                            @keydown="handleKeydown"
-                        ></textarea>
-                        <button
-                            type="button"
-                            @click="toggleRecording"
-                            :class="isRecording ? 'bg-red-500/20 text-red-400 nova-recording' : 'hover:bg-white/[0.08] text-[#94a3b8] hover:text-[#eef1f8]'"
-                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition cursor-pointer"
-                            :title="isRecording ? 'Stop recording' : 'Dictate your message'"
-                        >
-                            <i :class="transcribing ? 'fa-solid fa-spinner fa-spin' : isRecording ? 'fa-solid fa-microphone-lines' : 'fa-solid fa-microphone'" class="text-xs"></i>
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="loading || (!input.trim() && !pendingFile) || isSystemBusy"
-                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 transition disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer active:scale-95"
-                            :class="loading || (!input.trim() && !pendingFile) || isSystemBusy ? 'bg-white/[0.06] text-[#94a3b8]' : 'nova-gradient text-white nova-glow hover:scale-105'"
-                        >
-                            <i :class="loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrow-up'" class="text-xs"></i>
-                        </button>
-                    </div>
                     <div v-if="isRecording" class="flex items-center justify-center gap-2 mt-2.5">
-                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <span class="text-[11px] text-red-400">Recording… speak now</span>
+                        <span class="w-2 h-2 rounded-full bg-oc-error animate-pulse"></span>
+                        <span class="text-[11px] text-oc-error">Recording… speak now</span>
                     </div>
                     <div v-else-if="transcribing" class="flex items-center justify-center gap-2 mt-2.5">
-                        <i class="fa-solid fa-spinner fa-spin text-[11px] text-[#a5b4fc]"></i>
-                        <span class="text-[11px] text-[#94a3b8]">Transcribing…</span>
+                        <i class="fa-solid fa-spinner fa-spin text-[11px] text-oc-primary-strong"></i>
+                        <span class="text-[11px] text-oc-muted">Transcribing…</span>
                     </div>
-                    <div v-else-if="sttError" class="text-center text-[11px] text-red-400 mt-2.5">{{ sttError }}</div>
-                    <p class="text-center text-[10px] sm:text-[11px] text-[#94a3b8]/50 mt-2.5 sm:mt-3">Nova may display inaccurate info, including about people, so double-check its responses.</p>
+                    <div v-else-if="sttError" class="text-center text-[11px] text-oc-error mt-2.5">{{ sttError }}</div>
+                    <p class="text-center text-[10px] sm:text-[11px] text-oc-faint mt-2.5 sm:mt-3">Nova may display inaccurate info, including about people, so double-check its responses.</p>
                 </form>
             </div>
         </div>
+
+        <aside
+            v-if="user"
+            :class="[
+                sidebarOpen ? 'w-[260px]' : 'w-0',
+                isMobile ? 'fixed inset-y-0 right-0 z-50' : 'relative'
+            ]"
+            class="shrink-0 flex flex-col transition-all duration-300 overflow-hidden bg-oc-surface border-l border-oc-border"
+        >
+            <div class="w-[260px] h-full flex flex-col min-w-0">
+
+                <div class="p-3 pb-0">
+                    <button
+                        @click="newChat"
+                        class="oc-btn oc-btn-primary w-full"
+                    >
+                        <i class="fa-solid fa-plus text-[11px]"></i>
+                        <span>New chat</span>
+                    </button>
+                </div>
+
+                <div class="px-3 pt-2">
+                    <a href="/profile" class="oc-btn oc-btn-ghost w-full">
+                        <i class="fa-solid fa-briefcase text-[11px]"></i>
+                        <span>Job Alerts</span>
+                    </a>
+                </div>
+
+                <div class="flex-1 overflow-y-auto scrollbar-thin px-3 pt-4 pb-3">
+
+                    <p class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Context</p>
+                    <div class="bg-oc-raised border border-oc-border rounded-lg p-3 space-y-2">
+                        <template v-if="hasContext">
+                            <div v-if="user.cv_name" class="flex items-center gap-2 min-w-0" :title="user.cv_name">
+                                <i class="fa-solid fa-file-lines text-[10px] text-oc-primary shrink-0"></i>
+                                <span class="text-[11px] text-oc-text truncate">{{ user.cv_name }}</span>
+                            </div>
+                            <div v-if="keywordList.length" class="flex flex-wrap gap-1">
+                                <span v-for="kw in keywordList" :key="kw" class="text-[10px] px-1.5 py-0.5 rounded bg-oc-surface border border-oc-border text-oc-muted">{{ kw }}</span>
+                            </div>
+                            <div v-if="user.job_location" class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-location-dot text-[10px] text-oc-primary shrink-0"></i>
+                                <span class="text-[11px] text-oc-muted truncate">{{ user.job_location }}</span>
+                            </div>
+                            <div v-if="salaryLabel" class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-sack-dollar text-[10px] text-oc-primary shrink-0"></i>
+                                <span class="text-[11px] text-oc-muted truncate">{{ salaryLabel }}</span>
+                            </div>
+                            <div v-if="user.job_alerts_enabled" class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-bell text-[10px] text-oc-primary shrink-0"></i>
+                                <span class="text-[11px] text-oc-muted">Alerts: {{ user.job_alert_frequency }}</span>
+                            </div>
+                        </template>
+                        <p v-else class="text-[11px] text-oc-faint leading-4">
+                            No profile context yet.
+                            <a href="/profile" class="text-oc-primary hover:underline">Add your CV</a>
+                        </p>
+                    </div>
+
+                    <p class="px-2 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Tokens</p>
+                    <div class="bg-oc-raised border border-oc-border rounded-lg p-3 space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="text-oc-muted">Total used · all users</span>
+                            <span class="text-oc-primary-strong font-semibold tabular-nums">{{ systemTokens.toLocaleString() }}</span>
+                        </div>
+                        <div class="border-t border-oc-border pt-1.5 flex items-center justify-between text-[11px]">
+                            <span class="text-oc-muted">Last message</span>
+                            <span class="text-oc-text font-medium tabular-nums">{{ liveTokens.total.toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-oc-muted pl-2">
+                            <span>Input</span>
+                            <span class="tabular-nums">{{ liveTokens.prompt.toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-oc-muted pl-2">
+                            <span>Output</span>
+                            <span class="tabular-nums">{{ liveTokens.candidates.toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-oc-muted">
+                            <span>This session</span>
+                            <span class="tabular-nums">{{ sessionTokens.toLocaleString() }}</span>
+                        </div>
+                    </div>
+
+                    <p v-if="conversations.length" class="px-2 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Sessions</p>
+                    <div v-if="conversations.length === 0" class="text-center text-[12px] text-oc-faint mt-8 px-4">
+                        No sessions yet
+                    </div>
+                    <div v-for="conv in conversations" :key="conv.id">
+                        <button
+                            @click="loadConversation(conv)"
+                            class="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors cursor-pointer text-left border"
+                            :class="activeConversationId === conv.id
+                                ? 'bg-oc-active border-oc-border-strong text-oc-text'
+                                : 'border-transparent text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                        >
+                            <span class="w-1 h-4 rounded-full shrink-0 transition-colors" :class="activeConversationId === conv.id ? 'bg-oc-primary' : 'bg-transparent'"></span>
+                            <span class="truncate flex-1">{{ conv.title }}</span>
+                            <span
+                                @click.stop="deleteConversation(conv)"
+                                class="shrink-0 opacity-0 group-hover:opacity-100 text-oc-faint hover:text-oc-error transition-all cursor-pointer"
+                            >
+                                <i class="fa-solid fa-xmark text-[11px]"></i>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="user" class="p-3 border-t border-oc-border">
+                    <div class="px-2 py-1.5 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
+                            <span class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
+                            <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
+                        </div>
+                        <form @submit.prevent="logout" class="ml-auto shrink-0">
+                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-oc-muted hover:text-oc-text hover:bg-oc-hover transition cursor-pointer" title="Sign out">
+                                <i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <FeedbackModal 
-        :show="showFeedbackModal" 
+    <FeedbackModal
+        :show="showFeedbackModal"
         trigger="chat"
-        @close="showFeedbackModal = false" 
+        @close="showFeedbackModal = false"
     />
 </template>
 
@@ -288,11 +376,43 @@ import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
 import NovaIcon from '@/Components/NovaIcon.vue';
 import ChatMessage from '@/Components/ChatMessage.vue';
+import ProgressDots from '@/Components/ProgressDots.vue';
 import StatusBanners from '@/Components/StatusBanners.vue';
 import FeedbackModal from '@/Components/FeedbackModal.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user ?? null);
+
+const activeModel = { name: 'Gemini 2.5 Flash', provider: 'Google' };
+
+const activeConversationTitle = computed(() => {
+    const conv = conversations.value.find((c) => c.id === activeConversationId.value);
+    return conv ? conv.title : 'New chat';
+});
+
+const liveTokens = ref({ prompt: 0, candidates: 0, total: 0 });
+const sessionTokens = ref(0);
+const systemTokens = ref(page.props.token_usage?.total_tokens ?? 0);
+
+const keywordList = computed(() => {
+    const kw = user.value?.job_keywords;
+    if (!kw) return [];
+    return String(kw).split(/[\s,]+/).filter(Boolean).slice(0, 6);
+});
+
+const salaryLabel = computed(() => {
+    const min = user.value?.job_salary_min;
+    const max = user.value?.job_salary_max;
+    if (!min && !max) return '';
+    const fmt = (n) => '$' + Number(n).toLocaleString();
+    if (min && max) return `${fmt(min)} – ${fmt(max)}`;
+    return min ? fmt(min) : fmt(max);
+});
+
+const hasContext = computed(() => {
+    const u = user.value || {};
+    return !!(u.cv_name || u.job_keywords || u.job_location || u.job_salary_min || u.job_salary_max || u.job_alerts_enabled);
+});
 
 const input = ref('');
 const messages = ref([]);
@@ -309,6 +429,7 @@ const isMobile = ref(false);
 const showFeedbackModal = ref(false);
 const messageCount = ref(0);
 const feedbackShown = ref(false);
+let abortController = null;
 
 const isSpeechSupported = ref(typeof window !== 'undefined' && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
 const isRecording = ref(false);
@@ -345,10 +466,10 @@ function friendlyError(status) {
 }
 
 function getFileIcon(mimeType) {
-    if (mimeType === 'application/pdf') return { icon: 'fa-solid fa-file-pdf', iconColor: '#f87171', ext: 'PDF' };
-    if (mimeType === 'text/plain') return { icon: 'fa-solid fa-file-lines', iconColor: '#a5b4fc', ext: 'TXT' };
+    if (mimeType === 'application/pdf') return { icon: 'fa-solid fa-file-pdf', iconColor: '#f47067', ext: 'PDF' };
+    if (mimeType === 'text/plain') return { icon: 'fa-solid fa-file-lines', iconColor: '#7fb4ff', ext: 'TXT' };
     if (mimeType === 'text/csv') return { icon: 'fa-solid fa-file-csv', iconColor: '#4ade80', ext: 'CSV' };
-    return { icon: 'fa-solid fa-file', iconColor: '#94a3b8', ext: 'FILE' };
+    return { icon: 'fa-solid fa-file', iconColor: '#9c9ca5', ext: 'FILE' };
 }
 
 const isSystemBusy = computed(() => apiStatus.value.status === 'exhausted');
@@ -357,17 +478,17 @@ const statusStyles = computed(() => {
     const status = apiStatus.value.status;
     const rpmLabel = `${apiStatus.value.rpm || 0}/${apiStatus.value.rpm_limit || 15} RPM`;
 
-    if (status === 'exhausted') return { dot: 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]', border: 'border-red-500/30', text: 'text-red-400', label: 'System busy' };
-    if (status === 'critical') return { dot: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.8)]', border: 'border-orange-400/30', text: 'text-orange-300', label: rpmLabel };
-    if (status === 'warning') return { dot: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]', border: 'border-amber-400/30', text: 'text-amber-300', label: rpmLabel };
-    return { dot: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]', border: 'border-white/10', text: 'text-[#94a3b8]', label: 'System OK' };
+    if (status === 'exhausted') return { dot: 'bg-oc-error shadow-[0_0_8px_rgba(244,112,103,0.8)]', border: 'border-oc-error/30', text: 'text-oc-error', label: 'System busy' };
+    if (status === 'critical') return { dot: 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.8)]', border: 'border-orange-400/30', text: 'text-orange-300', label: rpmLabel };
+    if (status === 'warning') return { dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]', border: 'border-amber-400/30', text: 'text-amber-300', label: rpmLabel };
+    return { dot: 'bg-oc-success shadow-[0_0_8px_rgba(74,222,128,0.8)]', border: 'border-oc-border-strong', text: 'text-oc-muted', label: 'System OK' };
 });
 
 function autoResize() {
     const el = textareaRef.value;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 180) + 'px';
 }
 
 function handleKeydown(e) {
@@ -375,6 +496,10 @@ function handleKeydown(e) {
         e.preventDefault();
         sendMessage();
     }
+}
+
+function stopGeneration() {
+    if (abortController) abortController.abort();
 }
 
 async function toggleRecording() {
@@ -598,6 +723,8 @@ function newChat() {
     input.value = '';
     pendingFile.value = null;
     sttError.value = '';
+    liveTokens.value = { prompt: 0, candidates: 0, total: 0 };
+    sessionTokens.value = 0;
     if (isMobile.value) sidebarOpen.value = false;
     scrollDown();
 }
@@ -660,10 +787,13 @@ async function sendMessage() {
     pendingFile.value = null;
     if (textareaRef.value) textareaRef.value.style.height = 'auto';
     loading.value = true;
+    liveTokens.value = { prompt: 0, candidates: 0, total: 0 };
     scrollDown();
 
     const assistantIndex = messages.value.length;
     messages.value.push({ role: 'assistant', text: '' });
+
+    abortController = new AbortController();
 
     try {
         const payload = { message: text || (attachment && imageTypes.includes(attachment.mime_type) ? 'Describe this image.' : 'Analyze this file.') };
@@ -677,6 +807,7 @@ async function sendMessage() {
                 'Accept': 'text/event-stream',
             },
             body: JSON.stringify(payload),
+            signal: abortController.signal,
         });
 
         if (!response.ok && response.headers.get('content-type')?.includes('application/json')) {
@@ -721,7 +852,23 @@ async function sendMessage() {
                 if (eventType === 'chunk' && data.text) {
                     messages.value[assistantIndex].text += data.text;
                     scrollDown();
+                } else if (eventType === 'usage' && data.usage_metadata) {
+                    const u = data.usage_metadata;
+                    liveTokens.value = {
+                        prompt: u.promptTokenCount || 0,
+                        candidates: u.candidatesTokenCount || 0,
+                        total: u.totalTokenCount || (u.promptTokenCount || 0) + (u.candidatesTokenCount || 0),
+                    };
                 } else if (eventType === 'done') {
+                    const u = data.usage_metadata || {};
+                    const total = data.tokens_used || u.totalTokenCount || 0;
+                    sessionTokens.value += total;
+                    systemTokens.value = data.system_tokens_used ?? systemTokens.value;
+                    liveTokens.value = {
+                        prompt: u.promptTokenCount || 0,
+                        candidates: u.candidatesTokenCount || 0,
+                        total,
+                    };
                     if (data.conversation_id && !activeConversationId.value) {
                         activeConversationId.value = data.conversation_id;
                     }
@@ -757,25 +904,32 @@ async function sendMessage() {
             messageCount.value = 0;
         }
     } catch (err) {
-        let errorMsg = friendlyError(err?.response?.status);
-        if (err?.response?.data?.error) {
-            errorMsg = err.response.data.error;
-        }
-        if (err?.response?.data?.api_status) {
-            apiStatus.value = err.response.data.api_status;
-        } else if (err?.response?.status === 429) {
-            apiStatus.value = { status: 'exhausted', percentage: 100, resets_at: null };
-        }
-
-        if (messages.value[assistantIndex] && messages.value[assistantIndex].role === 'assistant') {
-            messages.value[assistantIndex].role = 'error';
-            messages.value[assistantIndex].text = errorMsg;
+        if (err?.name === 'AbortError') {
+            if (messages.value[assistantIndex] && !messages.value[assistantIndex].text && messages.value[assistantIndex].role === 'assistant') {
+                messages.value[assistantIndex].text = '— generation stopped —';
+            }
         } else {
-            messages.value.push({ role: 'error', text: errorMsg });
+            let errorMsg = friendlyError(err?.response?.status);
+            if (err?.response?.data?.error) {
+                errorMsg = err.response.data.error;
+            }
+            if (err?.response?.data?.api_status) {
+                apiStatus.value = err.response.data.api_status;
+            } else if (err?.response?.status === 429) {
+                apiStatus.value = { status: 'exhausted', percentage: 100, resets_at: null };
+            }
+
+            if (messages.value[assistantIndex] && messages.value[assistantIndex].role === 'assistant') {
+                messages.value[assistantIndex].role = 'error';
+                messages.value[assistantIndex].text = errorMsg;
+            } else {
+                messages.value.push({ role: 'error', text: errorMsg });
+            }
         }
     }
 
     loading.value = false;
+    abortController = null;
     scrollToLastMessage();
 }
 
@@ -797,5 +951,6 @@ onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
     document.removeEventListener('paste', handlePaste);
     cleanupRecording();
+    if (abortController) abortController.abort();
 });
 </script>

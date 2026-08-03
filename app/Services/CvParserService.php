@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\TokenUsageLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Smalot\PdfParser\Parser;
@@ -56,11 +57,14 @@ CV Text:
 
             if (!$response->successful()) {
                 Log::error('Gemini CV parse error: ' . $response->body());
+                $this->logUsage($response->json('usageMetadata', []), $response->status());
                 return ['error' => 'Failed to analyze CV with AI.'];
             }
 
             $reply = $response->json('candidates.0.content.parts.0.text', '');
             $reply = trim($reply);
+
+            $this->logUsage($response->json('usageMetadata', []), $response->status());
 
             $reply = preg_replace('/```json\s*/', '', $reply);
             $reply = preg_replace('/```\s*/', '', $reply);
@@ -76,6 +80,25 @@ CV Text:
         } catch (\Throwable $e) {
             Log::error('CV parse failed: ' . $e->getMessage());
             return ['error' => 'CV analysis failed.'];
+        }
+    }
+
+    private function logUsage(array $usageMetadata, ?int $status = null): void
+    {
+        try {
+            TokenUsageLog::record([
+                'user_id' => null,
+                'conversation_id' => null,
+                'endpoint' => 'cv_parse',
+                'model' => 'gemini-2.5-flash',
+                'prompt_tokens' => $usageMetadata['promptTokenCount'] ?? 0,
+                'candidates_tokens' => $usageMetadata['candidatesTokenCount'] ?? 0,
+                'thoughts_tokens' => $usageMetadata['thoughtsTokenCount'] ?? 0,
+                'total_tokens' => $usageMetadata['totalTokenCount'] ?? 0,
+                'status' => $status,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Token usage log failed: ' . $e->getMessage());
         }
     }
 
