@@ -11,8 +11,47 @@
                         <p class="text-[11px] text-oc-muted">Upload CV and set job preferences</p>
                     </div>
                 </div>
-                <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center">
-                    <span class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                <div class="relative">
+                    <button
+                        type="button"
+                        @click="menuOpen = !menuOpen"
+                        class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center hover:bg-oc-hover hover:border-oc-border-strong transition cursor-pointer overflow-hidden select-none"
+                        :class="menuOpen ? 'bg-oc-hover border-oc-border-strong' : ''"
+                    >
+                        <img v-if="props.user.avatar_url" :src="props.user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
+                        <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                    </button>
+
+                    <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = false"></div>
+
+                    <div
+                        v-if="menuOpen"
+                        class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-oc-surface border border-oc-border shadow-[0_10px_30px_rgba(0,0,0,0.6)] overflow-hidden z-50 oc-menu"
+                        @click.stop
+                    >
+                        <div class="px-3.5 py-3 border-b border-oc-border">
+                            <p class="text-[13px] font-medium text-oc-text truncate">{{ user.name }}</p>
+                            <p class="text-[11px] text-oc-muted truncate">{{ user.username ? '@' + user.username : user.email }}</p>
+                        </div>
+
+                        <div class="py-1.5">
+                            <button
+                                @click="openEditModal"
+                                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer"
+                            >
+                                <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
+                                Edit profile
+                            </button>
+                            <div class="my-1.5 border-t border-oc-border"></div>
+                            <button
+                                @click="requestSignOut"
+                                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer"
+                            >
+                                <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
+                                Sign out
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -229,12 +268,29 @@
 
         </div>
         </div>
+
+        <EditProfileModal
+            :show="showEditModal"
+            :user="props.user"
+            @close="showEditModal = false"
+            @updated="handleProfileUpdated"
+        />
+
+        <SignOutModal
+            :show="showSignOutModal"
+            :name="user.name"
+            @close="showSignOutModal = false"
+            @confirm="logout"
+        />
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
+import { router } from '@inertiajs/vue3';
+import EditProfileModal from '@/Components/EditProfileModal.vue';
+import SignOutModal from '@/Components/SignOutModal.vue';
 
 var props = defineProps({
     user: Object,
@@ -249,6 +305,9 @@ var errorMsg = ref('');
 var parsedData = ref(null);
 var jobs = ref([]);
 var searchResult = ref(null);
+var menuOpen = ref(false);
+var showEditModal = ref(false);
+var showSignOutModal = ref(false);
 
 var form = reactive({
     job_keywords: props.user.job_keywords || '',
@@ -363,6 +422,24 @@ async function searchJobs() {
     } finally {
         searching.value = false;
     }
+}
+
+function openEditModal() {
+    menuOpen.value = false;
+    showEditModal.value = true;
+}
+
+function handleProfileUpdated(updates) {
+    Object.assign(props.user, updates);
+}
+
+function requestSignOut() {
+    menuOpen.value = false;
+    showSignOutModal.value = true;
+}
+
+function logout() {
+    router.post('/logout');
 }
 
 onMounted(async function () {

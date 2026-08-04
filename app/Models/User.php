@@ -9,8 +9,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
-    'name', 'email', 'password',
-    'cv_path', 'cv_name', 'job_keywords', 'job_location',
+    'name', 'username', 'email', 'password',
+    'avatar_path', 'cv_path', 'cv_name', 'job_keywords', 'job_location',
     'job_type', 'job_remote', 'job_experience',
     'job_salary_min', 'job_salary_max',
     'job_alerts_enabled', 'job_alert_frequency',

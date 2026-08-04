@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.upload');
+    Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
     Route::post('/profile/cv', [ProfileController::class, 'uploadCv'])->name('profile.cv.upload');
     Route::delete('/profile/cv', [ProfileController::class, 'removeCv'])->name('profile.cv.remove');
     Route::put('/profile/job-preferences', [ProfileController::class, 'updatePreferences'])->name('profile.preferences');

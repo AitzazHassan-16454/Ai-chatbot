@@ -40,16 +40,6 @@
                                 {{ statusStyles.label }}
                             </span>
                         </div>
-                        <template v-if="user">
-                            <div class="w-7 h-7 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center cursor-pointer" :title="user.name">
-                                <span class="text-[11px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
-                            </div>
-                            <form @submit.prevent="logout" class="hidden sm:inline">
-                                <button type="submit" class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer" title="Sign out">
-                                    <i class="fa-solid fa-arrow-right-from-bracket text-[12px] text-oc-muted"></i>
-                                </button>
-                            </form>
-                        </template>
                         <template v-else>
                             <a href="/login" class="oc-btn oc-btn-ghost">Sign in</a>
                         </template>
@@ -334,19 +324,53 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3 pt-1">
-                            <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                                <span class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                        <div class="relative pt-1">
+                            <div v-if="profileMenuOpen" class="fixed inset-0 z-40" @click="profileMenuOpen = false"></div>
+
+                            <div
+                                v-if="profileMenuOpen"
+                                class="absolute bottom-full left-0 right-0 mb-1.5 z-50 rounded-xl border border-oc-border bg-oc-surface shadow-[0_10px_30px_rgba(0,0,0,0.6)] overflow-hidden oc-menu"
+                                style="transform-origin: bottom center"
+                                @click.stop
+                            >
+                                <div class="px-3.5 py-3 border-b border-oc-border">
+                                    <p class="text-[13px] font-medium text-oc-text truncate">{{ user.name }}</p>
+                                    <p class="text-[11px] text-oc-muted truncate">{{ user.username ? '@' + user.username : user.email }}</p>
+                                </div>
+
+                                <div class="py-1.5">
+                                    <button @click="openEditProfile" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
+                                        <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
+                                        Edit profile
+                                    </button>
+                                    <a href="/profile" @click="profileMenuOpen = false" class="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
+                                        <i class="fa-solid fa-file-arrow-up text-[12px] text-oc-muted w-4 text-center"></i>
+                                        Upload CV
+                                    </a>
+                                    <div class="my-1.5 border-t border-oc-border"></div>
+                                    <button @click="requestSignOut" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer">
+                                        <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
+                                        Sign out
+                                    </button>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
-                                <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
-                            </div>
-                            <form @submit.prevent="logout" class="ml-auto shrink-0">
-                                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-oc-muted hover:text-oc-text hover:bg-oc-hover transition cursor-pointer" title="Sign out">
-                                    <i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
-                                </button>
-                            </form>
+
+                            <button
+                                type="button"
+                                @click="profileMenuOpen = !profileMenuOpen"
+                                class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 transition cursor-pointer border"
+                                :class="profileMenuOpen ? 'bg-oc-hover border-oc-border-strong' : 'bg-transparent border-transparent hover:bg-oc-hover'"
+                            >
+                                <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center overflow-hidden shrink-0">
+                                    <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
+                                    <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                                </div>
+                                <div class="min-w-0 text-left">
+                                    <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
+                                    <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
+                                </div>
+                                <i class="fa-solid fa-chevron-down text-[9px] text-oc-faint ml-auto shrink-0 transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''"></i>
+                            </button>
                         </div>
                     </div>
                 </template>
@@ -391,6 +415,20 @@
         trigger="chat"
         @close="showFeedbackModal = false"
     />
+
+    <EditProfileModal
+        :show="showEditProfileModal"
+        :user="user"
+        @close="showEditProfileModal = false"
+        @updated="handleProfileUpdated"
+    />
+
+    <SignOutModal
+        :show="showSignOutModal"
+        :name="user ? user.name : ''"
+        @close="showSignOutModal = false"
+        @confirm="logout"
+    />
 </template>
 
 <script setup>
@@ -402,6 +440,8 @@ import ChatMessage from '@/Components/ChatMessage.vue';
 import ProgressDots from '@/Components/ProgressDots.vue';
 import StatusBanners from '@/Components/StatusBanners.vue';
 import FeedbackModal from '@/Components/FeedbackModal.vue';
+import EditProfileModal from '@/Components/EditProfileModal.vue';
+import SignOutModal from '@/Components/SignOutModal.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user ?? null);
@@ -446,10 +486,13 @@ const fileInput = ref(null);
 const pendingFile = ref(null);
 const dragActive = ref(false);
 const sidebarOpen = ref(false);
+const profileMenuOpen = ref(false);
 const conversations = ref([]);
 const activeConversationId = ref(null);
 const isMobile = ref(false);
 const showFeedbackModal = ref(false);
+const showEditProfileModal = ref(false);
+const showSignOutModal = ref(false);
 const messageCount = ref(0);
 const feedbackShown = ref(false);
 let abortController = null;
@@ -954,6 +997,20 @@ async function sendMessage() {
     loading.value = false;
     abortController = null;
     scrollToLastMessage();
+}
+
+function openEditProfile() {
+    profileMenuOpen.value = false;
+    showEditProfileModal.value = true;
+}
+
+function requestSignOut() {
+    profileMenuOpen.value = false;
+    showSignOutModal.value = true;
+}
+
+function handleProfileUpdated(updates) {
+    Object.assign(page.props.auth.user, updates);
 }
 
 function logout() {

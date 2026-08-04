@@ -183,6 +183,14 @@ textarea:focus-visible {
 
 .oc-fade-in { animation: ocFadeIn 0.12s ease-out; }
 
+/* ChatGPT-style popover (fade + slight scale/translate) */
+@keyframes ocMenuIn {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.oc-menu { animation: ocMenuIn 0.12s ease-out; transform-origin: top center; }
+
 /* Message entrance */
 .msg-in { animation: fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
 

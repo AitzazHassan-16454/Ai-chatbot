@@ -12,7 +12,10 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'username' => $this->username,
             'email' => $this->email,
+            'has_avatar' => (bool) $this->avatar_path,
+            'avatar_url' => $this->avatar_path ? '/profile/avatar?v=' . $this->updated_at?->timestamp : null,
             'tokens_used' => $this->tokens_used,
             'tokens_limit' => $this->tokens_limit,
             'created_at' => $this->created_at,
