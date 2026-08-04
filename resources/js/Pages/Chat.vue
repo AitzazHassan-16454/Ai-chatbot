@@ -14,9 +14,9 @@
                     <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                         <button
                             v-if="user"
-                            @click="sidebarOpen = !sidebarOpen"
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
-                            :title="sidebarOpen ? 'Hide sessions' : 'Show sessions'"
+                            class="md:hidden w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
+                            :title="'Show sessions'"
+                            @click="sidebarOpen = true"
                         >
                             <i class="fa-solid fa-bars text-[14px] text-oc-muted"></i>
                         </button>
@@ -188,11 +188,10 @@
                                 </div>
 
                                 <button
-                                    v-if="isSpeechSupported"
                                     type="button"
                                     @click="toggleRecording"
                                     :disabled="loading || isSystemBusy"
-                                    :class="isRecording ? 'bg-oc-error/15 text-oc-error nova-recording' : 'text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                                    :class="isRecording ? 'bg-oc-error/15 text-oc-error nova-recording' : 'text-oc-primary hover:bg-oc-hover hover:text-oc-primary-strong'"
                                     class="size-7 rounded-md flex items-center justify-center shrink-0 transition cursor-pointer disabled:opacity-40"
                                     :title="isRecording ? 'Stop recording' : 'Dictate your message'"
                                 >
@@ -240,124 +239,148 @@
         <aside
             v-if="user"
             :class="[
-                sidebarOpen ? 'w-[260px]' : 'w-0',
-                isMobile ? 'fixed inset-y-0 right-0 z-50' : 'relative'
+                sidebarOpen ? 'w-[260px]' : isMobile ? 'w-0' : 'w-12',
+                isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'
             ]"
-            class="shrink-0 flex flex-col transition-all duration-300 overflow-hidden bg-oc-surface border-l border-oc-border"
+            class="shrink-0 order-first flex flex-col transition-all duration-300 overflow-hidden bg-oc-surface border-r border-oc-border"
         >
-            <div class="w-[260px] h-full flex flex-col min-w-0">
+            <div class="h-full flex flex-col min-w-0" :class="sidebarOpen ? 'w-[260px]' : 'w-12'">
 
-                <div class="p-3 pb-0">
-                    <button
-                        @click="newChat"
-                        class="oc-btn oc-btn-primary w-full"
-                    >
-                        <i class="fa-solid fa-plus text-[11px]"></i>
-                        <span>New chat</span>
-                    </button>
-                </div>
-
-                <div class="px-3 pt-2">
-                    <a href="/profile" class="oc-btn oc-btn-ghost w-full">
-                        <i class="fa-solid fa-briefcase text-[11px]"></i>
-                        <span>Job Alerts</span>
-                    </a>
-                </div>
-
-                <div class="flex-1 overflow-y-auto scrollbar-thin px-3 pt-4 pb-3">
-
-                    <p class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Context</p>
-                    <div class="bg-oc-raised border border-oc-border rounded-lg p-3 space-y-2">
-                        <template v-if="hasContext">
-                            <div v-if="user.cv_name" class="flex items-center gap-2 min-w-0" :title="user.cv_name">
-                                <i class="fa-solid fa-file-lines text-[10px] text-oc-primary shrink-0"></i>
-                                <span class="text-[11px] text-oc-text truncate">{{ user.cv_name }}</span>
+                <template v-if="sidebarOpen">
+                    <div class="shrink-0 h-12 px-3 border-b border-oc-border flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-6 h-6 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
+                                <NovaIcon :size="13" />
                             </div>
-                            <div v-if="keywordList.length" class="flex flex-wrap gap-1">
-                                <span v-for="kw in keywordList" :key="kw" class="text-[10px] px-1.5 py-0.5 rounded bg-oc-surface border border-oc-border text-oc-muted">{{ kw }}</span>
-                            </div>
-                            <div v-if="user.job_location" class="flex items-center gap-2 min-w-0">
-                                <i class="fa-solid fa-location-dot text-[10px] text-oc-primary shrink-0"></i>
-                                <span class="text-[11px] text-oc-muted truncate">{{ user.job_location }}</span>
-                            </div>
-                            <div v-if="salaryLabel" class="flex items-center gap-2 min-w-0">
-                                <i class="fa-solid fa-sack-dollar text-[10px] text-oc-primary shrink-0"></i>
-                                <span class="text-[11px] text-oc-muted truncate">{{ salaryLabel }}</span>
-                            </div>
-                            <div v-if="user.job_alerts_enabled" class="flex items-center gap-2 min-w-0">
-                                <i class="fa-solid fa-bell text-[10px] text-oc-primary shrink-0"></i>
-                                <span class="text-[11px] text-oc-muted">Alerts: {{ user.job_alert_frequency }}</span>
-                            </div>
-                        </template>
-                        <p v-else class="text-[11px] text-oc-faint leading-4">
-                            No profile context yet.
-                            <a href="/profile" class="text-oc-primary hover:underline">Add your CV</a>
-                        </p>
-                    </div>
-
-                    <p class="px-2 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Tokens</p>
-                    <div class="bg-oc-raised border border-oc-border rounded-lg p-3 space-y-1.5">
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-oc-muted">Total used · all users</span>
-                            <span class="text-oc-primary-strong font-semibold tabular-nums">{{ systemTokens.toLocaleString() }}</span>
+                            <span class="text-[13px] font-semibold text-oc-text tracking-tight truncate">Nova</span>
                         </div>
-                        <div class="border-t border-oc-border pt-1.5 flex items-center justify-between text-[11px]">
-                            <span class="text-oc-muted">Last message</span>
-                            <span class="text-oc-text font-medium tabular-nums">{{ liveTokens.total.toLocaleString() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-oc-muted pl-2">
-                            <span>Input</span>
-                            <span class="tabular-nums">{{ liveTokens.prompt.toLocaleString() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-oc-muted pl-2">
-                            <span>Output</span>
-                            <span class="tabular-nums">{{ liveTokens.candidates.toLocaleString() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-[11px] text-oc-muted">
-                            <span>This session</span>
-                            <span class="tabular-nums">{{ sessionTokens.toLocaleString() }}</span>
-                        </div>
-                    </div>
-
-                    <p v-if="conversations.length" class="px-2 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Sessions</p>
-                    <div v-if="conversations.length === 0" class="text-center text-[12px] text-oc-faint mt-8 px-4">
-                        No sessions yet
-                    </div>
-                    <div v-for="conv in conversations" :key="conv.id">
                         <button
-                            @click="loadConversation(conv)"
-                            class="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors cursor-pointer text-left border"
-                            :class="activeConversationId === conv.id
-                                ? 'bg-oc-active border-oc-border-strong text-oc-text'
-                                : 'border-transparent text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                            @click="sidebarOpen = false"
+                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
+                            :title="isMobile ? 'Close sidebar' : 'Collapse sidebar'"
                         >
-                            <span class="w-1 h-4 rounded-full shrink-0 transition-colors" :class="activeConversationId === conv.id ? 'bg-oc-primary' : 'bg-transparent'"></span>
-                            <span class="truncate flex-1">{{ conv.title }}</span>
-                            <span
-                                @click.stop="deleteConversation(conv)"
-                                class="shrink-0 opacity-0 group-hover:opacity-100 text-oc-faint hover:text-oc-error transition-all cursor-pointer"
-                            >
-                                <i class="fa-solid fa-xmark text-[11px]"></i>
-                            </span>
+                            <i :class="isMobile ? 'fa-solid fa-xmark' : 'fa-solid fa-chevron-left'" class="text-[12px] text-oc-muted"></i>
                         </button>
                     </div>
-                </div>
 
-                <div v-if="user" class="p-3 border-t border-oc-border">
-                    <div class="px-2 py-1.5 flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                            <span class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
-                            <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
-                        </div>
-                        <form @submit.prevent="logout" class="ml-auto shrink-0">
-                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-oc-muted hover:text-oc-text hover:bg-oc-hover transition cursor-pointer" title="Sign out">
-                                <i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
-                            </button>
-                        </form>
+                    <div class="shrink-0 space-y-1.5 p-3 pb-2">
+                        <button
+                            @click="newChat"
+                            class="oc-btn oc-btn-primary w-full"
+                        >
+                            <i class="fa-solid fa-plus text-[11px]"></i>
+                            <span>New chat</span>
+                        </button>
+                        <a href="/profile" class="oc-btn oc-btn-ghost w-full">
+                            <i class="fa-solid fa-briefcase text-[11px]"></i>
+                            <span>Job Alerts</span>
+                        </a>
                     </div>
+
+                    <div class="flex-1 overflow-y-auto scrollbar-thin px-3 pt-1 pb-3">
+                        <p v-if="conversations.length" class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Sessions</p>
+                        <div v-if="conversations.length === 0" class="text-center text-[12px] text-oc-faint mt-8 px-4">
+                            No sessions yet
+                        </div>
+                        <div v-for="conv in conversations" :key="conv.id">
+                            <button
+                                @click="loadConversation(conv)"
+                                class="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors cursor-pointer text-left border"
+                                :class="activeConversationId === conv.id
+                                    ? 'bg-oc-active border-oc-border-strong text-oc-text'
+                                    : 'border-transparent text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                            >
+                                <span class="w-1 h-4 rounded-full shrink-0 transition-colors" :class="activeConversationId === conv.id ? 'bg-oc-primary' : 'bg-transparent'"></span>
+                                <span class="truncate flex-1">{{ conv.title }}</span>
+                                <span
+                                    @click.stop="deleteConversation(conv)"
+                                    class="shrink-0 opacity-0 group-hover:opacity-100 text-oc-faint hover:text-oc-error transition-all cursor-pointer"
+                                >
+                                    <i class="fa-solid fa-xmark text-[11px]"></i>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="shrink-0 border-t border-oc-border p-3 space-y-2">
+                        <div class="bg-oc-raised border border-oc-border rounded-lg px-3 py-2.5">
+                            <template v-if="hasContext">
+                                <div v-if="user.cv_name" class="flex items-center gap-2 min-w-0" :title="user.cv_name">
+                                    <i class="fa-solid fa-file-lines text-[10px] text-oc-primary shrink-0"></i>
+                                    <span class="text-[11px] text-oc-text truncate">{{ user.cv_name }}</span>
+                                </div>
+                                <div v-if="user.job_location || salaryLabel" class="flex items-center gap-2 min-w-0">
+                                    <i class="fa-solid fa-location-dot text-[10px] text-oc-primary shrink-0"></i>
+                                    <span class="text-[11px] text-oc-muted truncate">{{ [user.job_location, salaryLabel].filter(Boolean).join(' · ') }}</span>
+                                </div>
+                                <div v-if="keywordList.length" class="flex flex-wrap gap-1">
+                                    <span v-for="kw in keywordList" :key="kw" class="text-[10px] px-1.5 py-0.5 rounded bg-oc-surface border border-oc-border text-oc-muted">{{ kw }}</span>
+                                </div>
+                            </template>
+                            <p v-else class="text-[11px] text-oc-faint leading-4">
+                                No profile context yet.
+                                <a href="/profile" class="text-oc-primary hover:underline">Add your CV</a>
+                            </p>
+                        </div>
+
+                        <div class="bg-oc-raised border border-oc-border rounded-lg px-3 py-2.5 space-y-1">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="text-oc-muted">Tokens used</span>
+                                <span class="text-oc-primary-strong font-semibold tabular-nums">{{ systemTokens.toLocaleString() }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-oc-muted border-t border-oc-border pt-1">
+                                <span>This session</span>
+                                <span class="text-oc-text font-medium tabular-nums">{{ sessionTokens.toLocaleString() }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 pt-1">
+                            <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
+                                <span class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
+                                <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
+                            </div>
+                            <form @submit.prevent="logout" class="ml-auto shrink-0">
+                                <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-oc-muted hover:text-oc-text hover:bg-oc-hover transition cursor-pointer" title="Sign out">
+                                    <i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </template>
+
+                <div v-else class="flex-1 flex flex-col items-center gap-1 py-3">
+                    <button
+                        @click="sidebarOpen = true"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"
+                        title="Expand sidebar"
+                    >
+                        <i class="fa-solid fa-bars text-[14px] text-oc-muted"></i>
+                    </button>
+                    <button
+                        @click="newChat"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"
+                        title="New chat"
+                    >
+                        <i class="fa-solid fa-plus text-[13px] text-oc-muted"></i>
+                    </button>
+                    <a
+                        href="/profile"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"
+                        title="Job Alerts"
+                    >
+                        <i class="fa-solid fa-briefcase text-[13px] text-oc-muted"></i>
+                    </a>
+                    <div class="flex-1"></div>
+                    <button
+                        @click="sidebarOpen = true"
+                        class="w-8 h-8 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"
+                        :title="user.name"
+                    >
+                        <span class="text-[11px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                    </button>
                 </div>
             </div>
         </aside>

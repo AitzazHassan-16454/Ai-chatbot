@@ -1,72 +1,86 @@
 <template>
-    <div class="msg-in group mb-5">
+    <div class="msg-in group mb-6">
 
-        <div v-if="msg.role === 'user'">
-            <div class="flex items-center gap-2 mb-1">
-                <span class="w-5 h-5 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                    <NovaIcon :size="11" />
-                </span>
-                <span class="text-[11px] font-medium text-oc-faint">You</span>
-            </div>
-            <div v-if="msg.attachments && msg.attachments.length" class="flex flex-wrap gap-2 mb-1.5">
-                <template v-for="(att, ai) in msg.attachments" :key="ai">
-                    <img
-                        v-if="att.mime_type && att.mime_type.startsWith('image/')"
-                        :src="'data:' + att.mime_type + ';base64,' + att.data"
-                        class="h-16 w-16 sm:h-20 sm:w-20 rounded-md object-cover border border-oc-border"
-                    />
-                    <div v-else class="flex items-center gap-2.5 px-3 py-2 rounded-md bg-oc-raised border border-oc-border max-w-[220px]">
-                        <i :class="getFileIcon(att.mime_type).icon" class="text-[18px] shrink-0" :style="{ color: getFileIcon(att.mime_type).color }"></i>
-                        <div class="min-w-0">
-                            <p class="text-[11px] text-oc-text truncate">{{ att.name || getFileIcon(att.mime_type).label }}</p>
-                            <p class="text-[9px] text-oc-faint">{{ getFileIcon(att.mime_type).label }}</p>
+        <div v-if="msg.role === 'user'" class="flex items-end justify-end gap-2.5 sm:gap-3">
+            <div class="max-w-[85%] sm:max-w-[72%] flex flex-col items-end min-w-0">
+                <span class="text-[10px] font-medium text-oc-faint mb-1 mr-1">You</span>
+
+                <div v-if="msg.attachments && msg.attachments.length" class="flex flex-wrap gap-2 mb-1.5 justify-end">
+                    <template v-for="(att, ai) in msg.attachments" :key="ai">
+                        <img
+                            v-if="att.mime_type && att.mime_type.startsWith('image/')"
+                            :src="'data:' + att.mime_type + ';base64,' + att.data"
+                            class="h-16 w-16 sm:h-20 sm:w-20 rounded-lg object-cover border border-oc-border bg-oc-raised"
+                        />
+                        <div v-else class="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-oc-raised border border-oc-border max-w-[220px]">
+                            <i :class="getFileIcon(att.mime_type).icon" class="text-[18px] shrink-0" :style="{ color: getFileIcon(att.mime_type).color }"></i>
+                            <div class="min-w-0">
+                                <p class="text-[11px] text-oc-text truncate">{{ att.name || getFileIcon(att.mime_type).label }}</p>
+                                <p class="text-[9px] text-oc-faint">{{ getFileIcon(att.mime_type).label }}</p>
+                            </div>
                         </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
+
+                <div class="bg-oc-raised border border-oc-border rounded-2xl rounded-br-md px-4 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                    <p class="msg text-oc-text text-[13.5px] sm:text-[14.5px] leading-[1.7] whitespace-pre-wrap break-words">{{ msg.text }}</p>
+                </div>
+
+                <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        @click="copyText(msg.text)"
+                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
+                        :title="'Copy message'"
+                    >
+                        <i class="fa-regular fa-copy text-[11px]"></i>
+                    </button>
+                </div>
             </div>
-            <div class="msg text-oc-text text-[13.5px] sm:text-[14.5px] leading-[1.75] whitespace-pre-wrap break-words">{{ msg.text }}</div>
-            <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    @click="copyText(msg.text)"
-                    class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
-                    :title="'Copy message'"
-                >
-                    <i class="fa-regular fa-copy text-[11px]"></i>
-                </button>
+
+            <div class="w-7 h-7 rounded-full bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-user text-[11px] text-oc-muted"></i>
             </div>
         </div>
 
-        <div v-else-if="msg.role === 'error'">
-            <div class="flex items-start gap-2.5">
-                <span class="w-5 h-5 rounded-md bg-oc-error/10 border border-oc-error/25 flex items-center justify-center shrink-0 mt-0.5">
-                    <i class="fa-solid fa-triangle-exclamation text-[10px] text-oc-error"></i>
-                </span>
-                <div class="text-oc-error/90 text-[13px] sm:text-[14px] leading-relaxed">{{ msg.text }}</div>
+        <div v-else-if="msg.role === 'error'" class="flex items-start gap-2.5 sm:gap-3">
+            <span class="w-7 h-7 rounded-lg bg-oc-error/10 border border-oc-error/25 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-triangle-exclamation text-[11px] text-oc-error"></i>
+            </span>
+            <div class="text-oc-error/90 text-[13px] sm:text-[14px] leading-relaxed pt-1">{{ msg.text }}</div>
+        </div>
+
+        <div v-else-if="msg.text" class="flex items-start gap-2.5 sm:gap-3">
+            <div class="w-7 h-7 rounded-lg bg-oc-primary/15 border border-oc-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+                <NovaIcon :size="13" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+                <span class="block text-[11px] font-semibold text-oc-muted mb-1">Nova</span>
+
+                <div class="msg text-oc-text/90 text-[13.5px] sm:text-[14.5px] leading-[1.75]" v-html="formatText(msg.text)"></div>
+                <span v-if="streaming" class="nova-cursor text-oc-muted" aria-hidden="true"></span>
+
+                <div class="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        @click="copyText(msg.text)"
+                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
+                        :title="'Copy reply'"
+                    >
+                        <i class="fa-regular fa-copy text-[11px]"></i>
+                    </button>
+                    <button
+                        @click="toggleSpeak"
+                        :disabled="loading"
+                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer disabled:opacity-40 active:scale-90"
+                        :title="isSpeaking ? 'Stop' : 'Listen to this reply'"
+                    >
+                        <i :class="loading ? 'fa-solid fa-spinner fa-spin' : isSpeaking ? 'fa-solid fa-stop' : 'fa-solid fa-volume-high'" class="text-[11px]"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div v-else>
-            <div class="msg text-oc-text/90 text-[13.5px] sm:text-[14.5px] leading-[1.75]" v-html="formatText(msg.text)"></div>
-            <span v-if="streaming" class="nova-cursor text-oc-muted" aria-hidden="true"></span>
-
-            <div class="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    @click="copyText(msg.text)"
-                    class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
-                    :title="'Copy reply'"
-                >
-                    <i class="fa-regular fa-copy text-[11px]"></i>
-                </button>
-                <button
-                    @click="toggleSpeak"
-                    :disabled="loading"
-                    class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer disabled:opacity-40 active:scale-90"
-                    :title="isSpeaking ? 'Stop' : 'Listen to this reply'"
-                >
-                    <i :class="loading ? 'fa-solid fa-spinner fa-spin' : isSpeaking ? 'fa-solid fa-stop' : 'fa-solid fa-volume-high'" class="text-[11px]"></i>
-                </button>
-            </div>
-        </div>
+        <div v-else></div>
     </div>
 </template>
 
@@ -144,16 +158,94 @@ onUnmounted(() => {
     if (player.speakingKey === props.index) stopCurrent();
 });
 
-function formatText(text) {
-    return text
-        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')
-        .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+function inline(text) {
+    const codes = [];
+    let out = text.replace(/`([^`]+)`/g, (_, c) => {
+        codes.push(c);
+        return '\u0000IC\u0000' + codes.length + '\u0000';
+    });
+    out = out
         .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/(?<!\w)\*(?!\*)/g, '')
-        .replace(/\n/g, '<br>');
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/(\*|_)([^*_]+)\1/g, '<em>$2</em>')
+        .replace(/\*/g, '');
+    return out.replace(/\u0000IC\u0000(\d+)\u0000/g, (_, n) => {
+        return '<code class="inline-code">' + codes[Number(n) - 1] + '</code>';
+    });
+}
+
+function formatText(text) {
+    const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const codeBlocks = [];
+    let body = escaped.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+        codeBlocks.push(code.trim());
+        return '\u0000CODE\u0000' + codeBlocks.length + '\u0000';
+    });
+
+    body = body.replace(/^(#{1,3})\s+(.+)$/gm, (_, hashes, content) => {
+        const lvl = hashes.length;
+        return `<h${lvl} class="msg-h${lvl}">${inline(content)}</h${lvl}>`;
+    });
+
+    body = body.replace(/^&gt;\s?(.+)$/gm, (_, content) => `<blockquote>${inline(content)}</blockquote>`);
+
+    body = body.replace(/^([-*_]\s*){3,}$/gm, '<hr>');
+
+    const lines = body.split('\n');
+    let html = '';
+    let inUl = false;
+    let inOl = false;
+
+    const closeLists = () => {
+        if (inUl) { html += '</ul>'; inUl = false; }
+        if (inOl) { html += '</ol>'; inOl = false; }
+    };
+
+    for (const rawLine of lines) {
+        const line = rawLine.replace(/\r$/, '');
+
+        if (/^<h\d class="msg-h/.test(line) || /^<blockquote>/.test(line) || line === '<hr>') {
+            closeLists();
+            html += line;
+            continue;
+        }
+        if (line.startsWith('\u0000CODE\u0000')) {
+            closeLists();
+            html += (html ? '<br>' : '') + line;
+            continue;
+        }
+
+        const ulMatch = line.match(/^[-*•]\s+(.+)$/);
+        const olMatch = line.match(/^\d+[.)]\s+(.+)$/);
+
+        if (ulMatch) {
+            if (!inUl) { html += '<ul>'; inUl = true; }
+            html += '<li>' + inline(ulMatch[1]) + '</li>';
+            continue;
+        }
+        if (olMatch) {
+            if (!inOl) { html += '<ol>'; inOl = true; }
+            html += '<li>' + inline(olMatch[1]) + '</li>';
+            continue;
+        }
+
+        closeLists();
+        if (line.trim() === '') continue;
+        html += (html && !html.endsWith('<ul>') && !html.endsWith('<ol>') ? '<br>' : '') + inline(line);
+    }
+    closeLists();
+
+    html = html.replace(/<br>\s*$/, '');
+
+    return html.replace(/\u0000CODE\u0000(\d+)\u0000/g, (_, n) => {
+        const code = codeBlocks[Number(n) - 1];
+        return '<pre class="code-block"><code>' + code + '</code></pre>';
+    });
 }
 
 function getFileIcon(mimeType) {
@@ -192,6 +284,9 @@ function getFileIcon(mimeType) {
 .msg :deep(strong) { color: #ededed; font-weight: 600; }
 .msg :deep(em) { color: #a2bcff; font-style: italic; }
 .msg :deep(a) { color: #a2bcff; text-decoration: underline; text-underline-offset: 2px; }
+.msg :deep(h1) { font-size: 18px; font-weight: 650; margin: 18px 0 8px; color: #f0f0f3; }
+.msg :deep(h2) { font-size: 16px; font-weight: 650; margin: 16px 0 8px; color: #f0f0f3; }
+.msg :deep(h3) { font-size: 14.5px; font-weight: 600; margin: 14px 0 6px; color: #f0f0f3; }
 .msg :deep(ul), .msg :deep(ol) { margin: 8px 0; padding-left: 22px; }
 .msg :deep(li) { margin: 4px 0; }
 .msg :deep(blockquote) { border-left: 3px solid #7698fd; padding-left: 16px; margin: 12px 0; color: #a0a0a0; }
