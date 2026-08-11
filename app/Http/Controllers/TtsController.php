@@ -11,12 +11,15 @@ use Laravel\Ai\Audio;
 
 class TtsController extends Controller
 {
+    // The longest text we will turn into speech.
     private const MAX_TEXT_LENGTH = 5000;
 
+    /** Turns text into an audio file (text-to-speech). */
     public function synthesize(Request $request): Response|JsonResponse
     {
         $text = trim((string) $request->input('text'));
 
+        // Basic checks on the text.
         if ($text === '') {
             return response()->json(['error' => 'Text is required.'], 422);
         }
@@ -25,16 +28,19 @@ class TtsController extends Controller
             return response()->json(['error' => 'Text is too long. Max '.self::MAX_TEXT_LENGTH.' characters.'], 422);
         }
 
+        // Choose the voice: only 'male' or 'female' are allowed, default is female.
         $voice = in_array($request->input('voice'), ['male', 'female'], true)
             ? $request->input('voice')
             : 'female';
 
+        // Remove markdown symbols so the AI doesn't read them out loud.
         $speechText = $this->sanitizeForSpeech($text);
 
         if ($speechText === '') {
             return response()->json(['error' => 'Nothing to speak.'], 422);
         }
 
+        // Reuse the same audio for the same text (cache it on disk).
         $cacheKey = 'tts/'.$voice.'/'.hash('sha256', $speechText).'.wav';
 
         try {
@@ -47,6 +53,7 @@ class TtsController extends Controller
                 Storage::disk('local')->put($cacheKey, $audio->content(), 'private');
             }
 
+            // Return the saved audio file to the browser.
             return response(Storage::disk('local')->get($cacheKey), 200, [
                 'Content-Type' => 'audio/wav',
                 'Cache-Control' => 'private, max-age=31536000, immutable',
@@ -58,6 +65,7 @@ class TtsController extends Controller
         }
     }
 
+    /** Removes markdown formatting so the speech only contains words. */
     private function sanitizeForSpeech(string $text): string
     {
         return trim(preg_replace('/\s+/', ' ', preg_replace([

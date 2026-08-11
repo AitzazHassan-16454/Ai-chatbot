@@ -10,9 +10,11 @@ use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
+    /** Shows the logged-in user's profile page. */
     public function show()
     {
         $user = request()->user();
+
         return Inertia::render('Profile', [
             'user' => [
                 'id' => $user->id,
@@ -35,6 +37,7 @@ class ProfileController extends Controller
         ]);
     }
 
+    /** Saves a new CV, then asks the AI to read it and fill in job preferences. */
     public function uploadCv(Request $request)
     {
         $request->validate([
@@ -43,21 +46,20 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        if ($user->cv_path && Storage::disk('local')->exists($user->cv_path)) {
-            Storage::disk('local')->delete($user->cv_path);
-        }
+        // Delete the old CV file before storing the new one.
+        $this->deleteOldCv($user->cv_path);
 
         $file = $request->file('cv');
-        $path = $file->store('cvs/' . $user->id, 'local');
+        $path = $file->store('cvs/'.$user->id, 'local');
 
         $user->update([
             'cv_path' => $path,
             'cv_name' => $file->getClientOriginalName(),
         ]);
 
+        // Ask the AI to extract job info from the PDF.
         $parser = app(CvParserService::class);
-        $fullPath = Storage::disk('local')->path($path);
-        $parsed = $parser->extractFromPdf($fullPath);
+        $parsed = $parser->extractFromPdf(Storage::disk('local')->path($path));
 
         if (isset($parsed['error'])) {
             return response()->json([
@@ -68,6 +70,7 @@ class ProfileController extends Controller
             ]);
         }
 
+        // Fill in the preferences the user hasn't set yet with the AI's reading.
         $searchQuery = $parser->buildSearchQuery($parsed);
 
         $user->update([
@@ -85,13 +88,12 @@ class ProfileController extends Controller
         ]);
     }
 
+    /** Removes the logged-in user's saved CV. */
     public function removeCv(Request $request)
     {
         $user = $request->user();
 
-        if ($user->cv_path && Storage::disk('local')->exists($user->cv_path)) {
-            Storage::disk('local')->delete($user->cv_path);
-        }
+        $this->deleteOldCv($user->cv_path);
 
         $user->update([
             'cv_path' => null,
@@ -101,6 +103,7 @@ class ProfileController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /** Updates the logged-in user's job preferences. */
     public function updatePreferences(UpdatePreferencesRequest $request)
     {
         $request->user()->update($request->validated());
@@ -179,5 +182,13 @@ class ProfileController extends Controller
         return response()->file(Storage::disk('local')->path($user->avatar_path), [
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
+    }
+
+    /** Deletes a saved CV file from disk (if it exists). */
+    private function deleteOldCv(?string $cvPath): void
+    {
+        if ($cvPath && Storage::disk('local')->exists($cvPath)) {
+            Storage::disk('local')->delete($cvPath);
+        }
     }
 }

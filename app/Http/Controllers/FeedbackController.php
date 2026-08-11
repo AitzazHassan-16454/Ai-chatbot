@@ -9,8 +9,10 @@ use Illuminate\Support\Str;
 
 class FeedbackController extends Controller
 {
+    /** Saves a piece of user feedback, then forwards it to the n8n webhook. */
     public function store(Request $request)
     {
+        // Validate the feedback the user sent.
         $validated = $request->validate([
             'email' => 'nullable|email|max:255',
             'category' => 'required|string|in:general,bug,feature,other',
@@ -21,6 +23,7 @@ class FeedbackController extends Controller
 
         $user = $request->user();
 
+        // Save the feedback to the database.
         $feedback = Feedback::create([
             'user_id' => $user?->id,
             'email' => $validated['email'] ?? $user?->email,
@@ -30,9 +33,8 @@ class FeedbackController extends Controller
             'page_context' => $validated['page_context'] ?? url()->current(),
         ]);
 
-        $n8n = app(N8nService::class);
-        
-        $n8n->notifyFeedback([
+        // Let the n8n workflow know about the new feedback.
+        app(N8nService::class)->notifyFeedback([
             'feedback_id' => $feedback->id,
             'user_id' => $user?->id,
             'user_name' => $user?->name ?? 'Guest',

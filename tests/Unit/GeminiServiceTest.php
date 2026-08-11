@@ -12,7 +12,7 @@ class GeminiServiceTest extends TestCase
     {
         config(['services.gemini.api_key' => 'test-key']);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
 
         $this->assertTrue($service->isConfigured());
     }
@@ -21,7 +21,7 @@ class GeminiServiceTest extends TestCase
     {
         config(['services.gemini.api_key' => '']);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
 
         $this->assertFalse($service->isConfigured());
     }
@@ -34,14 +34,14 @@ class GeminiServiceTest extends TestCase
             'candidates' => [
                 ['content' => ['parts' => [['text' => 'Hello there!']]]],
             ],
-            'usageMetadata' => ['totalTokenCount' => 5],
+            'usageMetadata' => ['promptTokenCount' => 2, 'candidatesTokenCount' => 3],
         ];
 
         Http::fake([
             'generativelanguage.googleapis.com/*' => Http::response($responseBody),
         ]);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
         $result = $service->generateContent([
             ['role' => 'user', 'parts' => [['text' => 'Hello']]],
         ]);
@@ -59,7 +59,7 @@ class GeminiServiceTest extends TestCase
             'generativelanguage.googleapis.com/*' => Http::response(['error' => 'quota'], 429),
         ]);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
         $result = $service->generateContent([
             ['role' => 'user', 'parts' => [['text' => 'Hello']]],
         ]);
@@ -83,7 +83,7 @@ class GeminiServiceTest extends TestCase
             'generativelanguage.googleapis.com/*' => Http::response($responseBody),
         ]);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
         $result = $service->generateContent([
             ['role' => 'user', 'parts' => [['text' => 'Hello']]],
         ]);
@@ -96,51 +96,36 @@ class GeminiServiceTest extends TestCase
     {
         config(['services.gemini.api_key' => 'test-key']);
 
-        $responseBody = [
-            'promptFeedback' => ['blockReason' => 'SAFETY'],
-        ];
-
         Http::fake([
-            'generativelanguage.googleapis.com/*' => Http::response($responseBody),
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'error' => ['code' => 400, 'message' => 'The response was blocked due to SAFETY.'],
+            ], 400),
         ]);
 
-        $service = new GeminiService();
+        $service = new GeminiService;
         $result = $service->generateContent([
             ['role' => 'user', 'parts' => [['text' => 'Bad content']]],
         ]);
 
         $this->assertArrayHasKey('error', $result);
-        $this->assertEquals('Message blocked by safety filters.', $result['error']);
+        $this->assertEquals(400, $result['status']);
+        $this->assertEquals('That message was blocked by safety filters. Please rephrase and try again.', $result['error']);
     }
 
-    public function test_generate_content_retries_on_503(): void
+    public function test_generate_content_returns_error_when_api_is_overloaded(): void
     {
         config(['services.gemini.api_key' => 'test-key']);
 
-        $callCount = 0;
-        Http::fake(function ($request) use (&$callCount) {
-            $callCount++;
-            if ($callCount < 3) {
-                return Http::response(['error' => 'overloaded'], 503);
-            }
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response(['error' => 'overloaded'], 503),
+        ]);
 
-            $successBody = [
-                'candidates' => [
-                    ['content' => ['parts' => [['text' => 'Recovered!']]]],
-                ],
-                'usageMetadata' => ['totalTokenCount' => 3],
-            ];
-
-            return Http::response($successBody);
-        });
-
-        $service = new GeminiService();
+        $service = new GeminiService;
         $result = $service->generateContent([
             ['role' => 'user', 'parts' => [['text' => 'Hello']]],
         ]);
 
-        $this->assertArrayHasKey('reply', $result);
-        $this->assertEquals('Recovered!', $result['reply']);
-        $this->assertEquals(3, $callCount);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertEquals(503, $result['status']);
     }
 }

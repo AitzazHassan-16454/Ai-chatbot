@@ -9,6 +9,7 @@ use Laravel\Ai\Transcription;
 
 class SttController extends Controller
 {
+    // The largest audio file we accept (20 MB), and the formats we accept.
     private const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
 
     private const ALLOWED_MIME_TYPES = [
@@ -17,6 +18,7 @@ class SttController extends Controller
         'audio/mp4', 'audio/m4a', 'audio/webm',
     ];
 
+    /** Turns an uploaded audio file into text (speech-to-text). */
     public function transcribe(Request $request): JsonResponse
     {
         $request->validate([
@@ -25,17 +27,17 @@ class SttController extends Controller
 
         $file = $request->file('audio');
 
+        // Reject files that are too big or in an unsupported format.
         if ($file->getSize() > self::MAX_AUDIO_SIZE) {
             return response()->json(['error' => 'Audio is too large. Max 20 MB.'], 422);
         }
 
-        $mimeType = $file->getClientMimeType();
-
-        if (! in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
+        if (! in_array($file->getClientMimeType(), self::ALLOWED_MIME_TYPES, true)) {
             return response()->json(['error' => 'Unsupported audio format.'], 422);
         }
 
         try {
+            // Ask the AI to transcribe the audio.
             $transcription = Transcription::fromUpload($file)
                 ->timeout(60)
                 ->generate('gemini');

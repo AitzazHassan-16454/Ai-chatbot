@@ -99,7 +99,7 @@ class ChatTest extends TestCase
         ]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['attachments.*.mime_type']);
+        $response->assertJsonValidationErrors(['attachments.0.mime_type']);
     }
 
     public function test_valid_image_attachment_is_accepted(): void

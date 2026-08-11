@@ -2,13 +2,33 @@
 
 namespace App\Services;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\ServerException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
+use Laravel\Ai\Exceptions\ProviderOverloadedException;
+use Laravel\Ai\Exceptions\RateLimitedException;
+use Laravel\Ai\Files\Base64Document;
+use Laravel\Ai\Files\Base64Image;
+use Laravel\Ai\Messages\AssistantMessage;
+use Laravel\Ai\Messages\UserMessage;
+use Laravel\Ai\Responses\Data\Usage;
+use Laravel\Ai\Streaming\Events\Error as StreamError;
+use Laravel\Ai\Streaming\Events\StreamEnd;
+use Laravel\Ai\Streaming\Events\TextDelta;
+use Throwable;
 
+use function Laravel\Ai\agent;
+
+/**
+ * Talks to the Google Gemini API using the Laravel AI SDK.
+ *
+ * Two ways to get an answer from the AI:
+ *   - generateContent()  waits for the whole reply and returns it as an array.
+ *   - streamContent()    returns a generator that yields each piece of text
+ *                        as it arrives, so the browser can stream it live.
+ *
+ * Both return ['error' => ..., 'status' => ...] instead of throwing, so the
+ * controller can show a friendly message to the user.
+ */
 class GeminiService
 {
     private string $apiKey;
@@ -18,232 +38,237 @@ class GeminiService
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key', '');
-        $this->model = 'gemini-2.5-flash';
+        $this->model = config('services.gemini.model', 'gemini-2.5-flash');
     }
 
+    /** Asks Gemini for one complete answer and returns it as an array. */
     public function generateContent(array $history): array
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+        [$messages, $prompt, $attachments] = $this->splitHistory($history);
 
-        $maxRetries = 3;
-        $response = null;
-        $status = null;
+        try {
+            // The Laravel AI SDK builds the Gemini request for us.
+            $response = agent('', $messages)->prompt(
+                $prompt,
+                $attachments,
+                provider: 'gemini',
+                model: $this->model,
+                timeout: 120,
+            );
 
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-            $response = Http::withBody(
-                json_encode(['contents' => $history]),
-                'application/json'
-            )->post($url);
+            $reply = $response->text;
 
-            if ($response->successful()) {
-                break;
+            if (empty($reply)) {
+                return ['error' => 'Empty response from AI.', 'status' => 500];
             }
 
-            $status = $response->status();
+            return [
+                'reply' => $reply,
+                'tokens_used' => $this->totalTokens($response->usage),
+                'usage_metadata' => $this->usageMetadata($response->usage),
+            ];
+        } catch (Throwable $e) {
+            Log::error('Gemini error: '.$e->getMessage());
 
-            if ($status === 429 || $status === 403 || $status === 400) {
-                break;
-            }
-
-            if ($status === 503 && $attempt < $maxRetries) {
-                usleep($attempt * 1000000);
-
-                continue;
-            }
-
-            break;
+            return $this->errorResult($e);
         }
-
-        if (! $response || ! $response->successful()) {
-            $error = $this->friendlyError($status);
-
-            Log::error('Gemini error: '.($response?->body() ?? 'no response'));
-
-            return ['error' => $error, 'status' => $status];
-        }
-
-        $data = $response->json();
-
-        if (isset($data['error'])) {
-            $errorCode = $data['error'];
-            $error = match ($errorCode) {
-                'quota' => 'API quota exceeded.',
-                'api_key_invalid' => 'Invalid API key.',
-                default => 'Gemini error: '.$errorCode,
-            };
-            Log::error('Gemini API error: '.$errorCode);
-
-            return ['error' => $error, 'status' => 429];
-        }
-
-        if (isset($data['promptFeedback']['blockReason'])) {
-            return ['error' => 'Message blocked by safety filters.', 'status' => 400];
-        }
-
-        $reply = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
-
-        if (empty($reply)) {
-            Log::warning('Gemini empty: '.json_encode($data));
-
-            return ['error' => 'Empty response from AI.', 'status' => 500];
-        }
-
-        $usageMetadata = $data['usageMetadata'] ?? [];
-        $tokensUsed = $usageMetadata['totalTokenCount'] ?? 0;
-
-        return [
-            'reply' => $reply,
-            'tokens_used' => $tokensUsed,
-            'usage_metadata' => $usageMetadata,
-        ];
     }
 
     /**
+     * Asks Gemini for an answer, but yields each piece of text as it is
+     * generated instead of waiting for the whole reply.
+     *
      * @return \Generator<int, array{type: string, text?: string, tokens_used?: int, usage_metadata?: array, message?: string, status?: int}>
      */
     public function streamContent(array $history): \Generator
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:streamGenerateContent?alt=sse";
+        [$messages, $prompt, $attachments] = $this->splitHistory($history);
 
-        $body = ['contents' => $history];
+        try {
+            $stream = agent('', $messages)->stream(
+                $prompt,
+                $attachments,
+                provider: 'gemini',
+                model: $this->model,
+                timeout: 120,
+            );
 
-        $maxRetries = 3;
-        $lastException = null;
-
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-            try {
-                $client = new Client([
-                    'timeout' => 120,
-                    'stream' => true,
-                ]);
-
-                $response = $client->post($url, [
-                    'headers' => [
-                        'Content-Type' => 'application/json',
-                        'x-goog-api-key' => $this->apiKey,
-                    ],
-                    'json' => $body,
-                ]);
-
-                $stream = $response->getBody();
-                $buffer = '';
-                $usageMetadata = null;
-
-                while (! $stream->eof()) {
-                    $buffer .= $stream->read(4096);
-
-                    while (($newlinePos = strpos($buffer, "\n")) !== false) {
-                        $line = substr($buffer, 0, $newlinePos);
-                        $buffer = substr($buffer, $newlinePos + 1);
-                        $line = trim($line);
-
-                        if ($line === '' || ! str_starts_with($line, 'data: ')) {
-                            continue;
-                        }
-
-                        $jsonStr = substr($line, 6);
-                        $chunk = json_decode($jsonStr, true);
-
-                        if ($chunk === null) {
-                            continue;
-                        }
-
-                        if (isset($chunk['error'])) {
-                            $errorCode = $chunk['error'];
-                            $error = match ($errorCode) {
-                                'quota' => 'API quota exceeded.',
-                                'api_key_invalid' => 'Invalid API key.',
-                                default => 'Gemini error: '.$errorCode,
-                            };
-                            Log::error('Gemini stream API error: '.$errorCode);
-                            yield ['type' => 'error', 'message' => $error, 'status' => 429];
-
-                            return;
-                        }
-
-                        if (isset($chunk['promptFeedback']['blockReason'])) {
-                            yield ['type' => 'error', 'message' => 'Message blocked by safety filters.', 'status' => 400];
-
-                            return;
-                        }
-
-                        if (! empty($chunk['candidates'][0]['content']['parts'])) {
-                            foreach ($chunk['candidates'][0]['content']['parts'] as $part) {
-                                if (isset($part['text']) && $part['text'] !== '') {
-                                    yield ['type' => 'text', 'text' => $part['text']];
-                                }
-                            }
-                        }
-
-                        if (isset($chunk['usageMetadata'])) {
-                            $usageMetadata = $chunk['usageMetadata'];
-                            yield ['type' => 'usage', 'usage_metadata' => $usageMetadata];
-                        }
-
-                        if (isset($chunk['candidates'][0]['finishReason'])) {
-                            yield [
-                                'type' => 'done',
-                                'tokens_used' => $usageMetadata['totalTokenCount'] ?? 0,
-                                'usage_metadata' => $usageMetadata,
-                            ];
-
-                            return;
-                        }
-                    }
+            // Walk through the SDK's stream events and turn them into the
+            // same chunks the browser already understands.
+            foreach ($stream as $event) {
+                if ($event instanceof TextDelta) {
+                    yield ['type' => 'text', 'text' => $event->delta];
+                } elseif ($event instanceof StreamEnd) {
+                    yield [
+                        'type' => 'done',
+                        'tokens_used' => $this->totalTokens($event->usage),
+                        'usage_metadata' => $this->usageMetadata($event->usage),
+                    ];
+                } elseif ($event instanceof StreamError) {
+                    yield [
+                        'type' => 'error',
+                        'message' => $event->message,
+                        'status' => is_numeric($event->type) ? (int) $event->type : 500,
+                    ];
                 }
-
-                yield [
-                    'type' => 'done',
-                    'tokens_used' => $usageMetadata['totalTokenCount'] ?? 0,
-                    'usage_metadata' => $usageMetadata,
-                ];
-
-                return;
-
-            } catch (ConnectException $e) {
-                $lastException = $e;
-                if ($attempt < $maxRetries) {
-                    usleep($attempt * 1000000);
-
-                    continue;
-                }
-            } catch (ClientException $e) {
-                $status = $e->getResponse()->getStatusCode();
-                yield ['type' => 'error', 'message' => $this->friendlyError($status), 'status' => $status];
-
-                return;
-            } catch (ServerException $e) {
-                $status = $e->getResponse()->getStatusCode();
-                if ($status === 503 && $attempt < $maxRetries) {
-                    usleep($attempt * 1000000);
-
-                    continue;
-                }
-                yield ['type' => 'error', 'message' => $this->friendlyError($status), 'status' => $status];
-
-                return;
-            } catch (\Throwable $e) {
-                Log::error('Gemini stream error: '.$e->getMessage());
-                yield ['type' => 'error', 'message' => $this->friendlyError(500), 'status' => 500];
-
-                return;
             }
-        }
+        } catch (Throwable $e) {
+            Log::error('Gemini stream error: '.$e->getMessage());
 
-        Log::error('Gemini stream failed after retries', ['error' => $lastException?->getMessage()]);
-        yield ['type' => 'error', 'message' => $this->friendlyError(0), 'status' => 503];
+            $result = $this->errorResult($e);
+
+            yield ['type' => 'error', 'message' => $result['error'], 'status' => $result['status']];
+        }
     }
 
+    /** True when an API key is set in the config. */
     public function isConfigured(): bool
     {
         return ! empty($this->apiKey);
     }
 
+    /** The name of the AI model we are using. */
     public function model(): string
     {
         return $this->model;
     }
 
+    /**
+     * Splits the Gemini-style history (from ChatController::buildHistory)
+     * into what the Laravel AI SDK expects: the past messages, plus the
+     * current user message (text + files) which becomes the prompt.
+     *
+     * @return array{0: array<int, mixed>, 1: string, 2: array<int, mixed>}
+     */
+    private function splitHistory(array $history): array
+    {
+        $messages = $this->historyToMessages($history);
+
+        // The last turn is the message the user just sent.
+        $lastMessage = array_pop($messages) ?? new UserMessage('');
+
+        return [
+            $messages,
+            $lastMessage->content ?? '',
+            $lastMessage->attachments->all(),
+        ];
+    }
+
+    /**
+     * Converts the Gemini-style history into the message objects the
+     * Laravel AI SDK understands.
+     *
+     * @return array<int, UserMessage|AssistantMessage>
+     */
+    private function historyToMessages(array $history): array
+    {
+        $messages = [];
+
+        foreach ($history as $turn) {
+            $role = $turn['role'] ?? 'user';
+            $parts = $turn['parts'] ?? [];
+
+            // Pull the text and any files out of the 'parts' list.
+            $text = '';
+            $attachments = [];
+
+            foreach ($parts as $part) {
+                if (isset($part['text'])) {
+                    $text = $part['text'];
+                }
+
+                if (isset($part['inline_data'])) {
+                    $attachments[] = $this->attachmentFromInlineData($part['inline_data']);
+                }
+            }
+
+            // Gemini calls the assistant role 'model'.
+            $messages[] = $role === 'model'
+                ? new AssistantMessage($text)
+                : new UserMessage($text, $attachments);
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Turns a file stored as 'inline_data' into an attachment the SDK accepts.
+     */
+    private function attachmentFromInlineData(array $inlineData): Base64Image|Base64Document
+    {
+        $mimeType = $inlineData['mime_type'] ?? '';
+        $data = $inlineData['data'] ?? '';
+
+        return str_starts_with($mimeType, 'image/')
+            ? new Base64Image($data, $mimeType)
+            : new Base64Document($data, $mimeType);
+    }
+
+    /** Counts the total tokens the SDK reported for a request. */
+    private function totalTokens(Usage $usage): int
+    {
+        return $usage->promptTokens + $usage->completionTokens + $usage->reasoningTokens;
+    }
+
+    /**
+     * Converts the SDK's token counts into the shape the rest of the app
+     * expects (promptTokenCount, candidatesTokenCount, ...).
+     */
+    private function usageMetadata(Usage $usage): array
+    {
+        return [
+            'promptTokenCount' => $usage->promptTokens,
+            'candidatesTokenCount' => $usage->completionTokens,
+            'thoughtsTokenCount' => $usage->reasoningTokens,
+            'totalTokenCount' => $this->totalTokens($usage),
+        ];
+    }
+
+    /** Turns an SDK exception into the ['error' => ..., 'status' => ...] shape. */
+    private function errorResult(Throwable $e): array
+    {
+        $status = match (true) {
+            $e instanceof RateLimitedException => 429,
+            $e instanceof ProviderOverloadedException => 503,
+            $e instanceof RequestException => $e->response?->status() ?? 500,
+            default => 500,
+        };
+
+        return [
+            'error' => $this->errorMessageFrom($e, $status),
+            'status' => $status,
+        ];
+    }
+
+    /** Picks a friendly message for an SDK exception. */
+    private function errorMessageFrom(Throwable $e, int $status): string
+    {
+        // The SDK sometimes wraps the original HTTP response.
+        $response = $e instanceof RequestException
+            ? $e->response
+            : ($e->getPrevious() instanceof RequestException ? $e->getPrevious()->response : null);
+
+        $body = $response?->json() ?? [];
+
+        // Gemini sometimes tells us the problem directly (e.g. 'quota').
+        if (isset($body['error']) && is_string($body['error'])) {
+            return $this->friendlyApiError($body['error']);
+        }
+
+        return $this->friendlyError($status);
+    }
+
+    /** Turns an error code sent by the Gemini API into a readable message. */
+    private function friendlyApiError(string $code): string
+    {
+        return match ($code) {
+            'quota' => 'API quota exceeded.',
+            'api_key_invalid' => 'Invalid API key.',
+            default => 'Gemini error: '.$code,
+        };
+    }
+
+    /** Turns an HTTP status code into a friendly message for the user. */
     private function friendlyError(?int $status, string $fallback = 'Something went wrong. Please try again.'): string
     {
         return match ($status) {
