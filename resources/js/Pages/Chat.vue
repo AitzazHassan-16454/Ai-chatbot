@@ -9,39 +9,55 @@
 
         <div class="flex-1 flex flex-col min-w-0">
 
-            <header class="shrink-0 h-12 px-4 sm:px-6 border-b border-oc-border flex items-center">
+            <header class="shrink-0 h-14 px-4 sm:px-6 border-b border-oc-border bg-oc-surface flex items-center">
                 <div class="max-w-3xl mx-auto w-full flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                         <button
                             v-if="user"
-                            class="md:hidden w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
+                            class="md:hidden w-8 h-8 rounded-xl neu-btn !p-0 flex items-center justify-center shrink-0"
                             :title="'Show sessions'"
                             @click="sidebarOpen = true"
                         >
-                            <i class="fa-solid fa-bars text-[14px] text-oc-muted"></i>
+                            <i class="fa-solid fa-bars text-[13px] text-oc-muted"></i>
                         </button>
-                        <div class="flex items-center gap-1.5 text-[13px] min-w-0">
-                            <div class="w-6 h-6 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                                <NovaIcon :size="13" />
+                        <div class="flex items-center gap-2 text-[13px] min-w-0">
+                            <div class="w-7 h-7 rounded-xl neu-card-sm flex items-center justify-center shrink-0">
+                                <NovaIcon :size="14" />
                             </div>
-                            <span class="text-oc-text font-semibold tracking-tight">Nova</span>
+                            <span class="text-oc-text font-bold tracking-tight">Nova</span>
                             <i class="fa-solid fa-chevron-right text-[9px] text-oc-faint shrink-0"></i>
-                            <span class="text-oc-muted truncate">{{ activeConversationTitle }}</span>
+                            <select
+                                v-model="selectedMode"
+                                class="bg-oc-bg border border-oc-border text-oc-text text-[11px] font-medium rounded-xl px-2.5 py-1 cursor-pointer outline-none hover:border-oc-border-strong transition shrink-0 neu-pressed"
+                                title="Select AI Agent Persona"
+                            >
+                                <option v-for="m in modes" :key="m.id" :value="m.id">
+                                    {{ m.label }}
+                                </option>
+                            </select>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
+                        <button
+                            @click="toggleTheme"
+                            type="button"
+                            class="w-8 h-8 rounded-xl neu-btn !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text transition"
+                            :title="isDarkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+                        >
+                            <i :class="isDarkMode ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-indigo-500'" class="text-[13px]"></i>
+                        </button>
                         <div
                             v-if="apiStatus"
-                            class="hidden md:flex items-center gap-2 px-2.5 h-7 rounded-lg bg-oc-surface border transition-colors"
+                            class="hidden md:flex items-center gap-2 px-3 h-8 rounded-xl neu-card-sm text-[11px]"
                             :class="statusStyles.border"
                         >
-                            <div class="w-1.5 h-1.5 rounded-full" :class="statusStyles.dot"></div>
+                            <div class="w-2 h-2 rounded-full" :class="statusStyles.dot"></div>
                             <span class="text-[11px]" :class="statusStyles.text">
                                 {{ statusStyles.label }}
                             </span>
                         </div>
                         <template v-else>
-                            <a href="/login" class="oc-btn oc-btn-ghost">Sign in</a>
+                            <a href="/login" class="neu-btn text-[12px] py-1.5 px-3">Sign in</a>
                         </template>
                     </div>
                 </div>
@@ -51,27 +67,27 @@
 
                 <div v-if="!messages.length && !loading" class="h-full flex flex-col items-center justify-center px-5 sm:px-8">
                     <div class="text-center mb-8">
-                        <div class="w-12 h-12 mx-auto mb-5 rounded-xl bg-oc-raised border border-oc-border flex items-center justify-center">
-                            <NovaIcon :size="24" />
+                        <div class="w-16 h-16 mx-auto mb-5 rounded-2xl neu-card flex items-center justify-center">
+                            <NovaIcon :size="32" />
                         </div>
-                        <h2 class="text-[22px] sm:text-[26px] font-semibold text-oc-text tracking-tight mb-2">
-                            How can <span class="text-oc-primary-strong">Nova</span> help?
+                        <h2 class="text-[22px] sm:text-[26px] font-bold text-oc-text tracking-tight mb-2">
+                            How can <span class="text-oc-primary">Nova</span> help?
                         </h2>
                         <p class="text-[13px] text-oc-muted">
                             {{ user ? 'Ask anything — I think, write, and speak back.' : 'Sign in to save your chat history, or continue as a guest.' }}
                         </p>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
                         <button
                             v-for="suggestion in suggestions"
                             :key="suggestion.label"
                             @click="useSuggestion(suggestion.prompt)"
-                            class="group text-left px-4 py-3.5 rounded-xl bg-oc-surface border border-oc-border hover:bg-oc-hover hover:border-oc-border-strong transition-colors cursor-pointer"
+                            class="group text-left px-4 py-4 neu-card-sm hover:translate-y-[-2px] transition-all cursor-pointer"
                         >
-                            <div class="w-7 h-7 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center mb-2 group-hover:border-oc-border-strong">
-                                <i :class="suggestion.icon" class="text-[11px] text-oc-primary"></i>
+                            <div class="w-8 h-8 rounded-xl neu-pressed flex items-center justify-center mb-2.5">
+                                <i :class="suggestion.icon" class="text-[12px] text-oc-primary"></i>
                             </div>
-                            <span class="text-[12px] text-oc-muted group-hover:text-oc-text transition-colors">{{ suggestion.label }}</span>
+                            <span class="text-[12px] text-oc-muted group-hover:text-oc-text transition-colors font-medium">{{ suggestion.label }}</span>
                         </button>
                     </div>
                 </div>
@@ -100,7 +116,7 @@
                 <form @submit.prevent="sendMessage" class="max-w-3xl mx-auto" @dragover.prevent="dragActive = true" @dragleave.prevent="dragActive = false" @drop.prevent="handleDrop">
 
                     <div
-                        class="relative min-h-[96px] w-full overflow-clip rounded-xl bg-oc-surface transition-shadow duration-200 shadow-[0_2px_4px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.3),0_0_0_0.5px_rgba(255,255,255,0.16),0_-0.5px_0_rgba(255,255,255,0.06)] focus-within:shadow-[0_8px_16px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.3),0_0_0_0.5px_rgba(255,255,255,0.16),0_-0.5px_0_rgba(255,255,255,0.06)]"
+                        class="relative min-h-[96px] w-full overflow-clip neu-pressed p-1"
                         :class="dragActive ? 'border border-oc-primary border-dashed' : ''"
                     >
                         <div v-if="dragActive" class="pointer-events-none absolute inset-0 z-20 grid place-items-center rounded-xl bg-oc-surface/90">
@@ -227,7 +243,6 @@
         </div>
 
         <aside
-            v-if="user"
             :class="[
                 sidebarOpen ? 'w-[260px]' : isMobile ? 'w-0' : 'w-12',
                 isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'
@@ -237,50 +252,50 @@
             <div class="h-full flex flex-col min-w-0" :class="sidebarOpen ? 'w-[260px]' : 'w-12'">
 
                 <template v-if="sidebarOpen">
-                    <div class="shrink-0 h-12 px-3 border-b border-oc-border flex items-center justify-between gap-2">
+                    <div class="shrink-0 h-14 px-3.5 border-b border-oc-border flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <div class="w-6 h-6 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                                <NovaIcon :size="13" />
+                            <div class="w-7 h-7 rounded-xl neu-card-sm flex items-center justify-center shrink-0">
+                                <NovaIcon :size="14" />
                             </div>
-                            <span class="text-[13px] font-semibold text-oc-text tracking-tight truncate">Nova</span>
+                            <span class="text-[14px] font-bold text-oc-text tracking-tight truncate">Nova AI</span>
                         </div>
                         <button
                             @click="sidebarOpen = false"
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer shrink-0"
+                            class="w-8 h-8 rounded-xl neu-btn !p-0 flex items-center justify-center shrink-0"
                             :title="isMobile ? 'Close sidebar' : 'Collapse sidebar'"
                         >
                             <i :class="isMobile ? 'fa-solid fa-xmark' : 'fa-solid fa-chevron-left'" class="text-[12px] text-oc-muted"></i>
                         </button>
                     </div>
 
-                    <div class="shrink-0 space-y-1.5 p-3 pb-2">
+                    <div class="shrink-0 space-y-2 p-3 pb-2">
                         <button
                             @click="newChat"
-                            class="oc-btn oc-btn-primary w-full"
+                            class="neu-btn neu-btn-primary w-full py-2.5"
                         >
                             <i class="fa-solid fa-plus text-[11px]"></i>
                             <span>New chat</span>
                         </button>
-                        <a href="/profile" class="oc-btn oc-btn-ghost w-full">
-                            <i class="fa-solid fa-briefcase text-[11px]"></i>
+                        <a href="/profile" class="neu-btn w-full py-2">
+                            <i class="fa-solid fa-briefcase text-[11px] text-oc-primary"></i>
                             <span>Job Alerts</span>
                         </a>
                     </div>
 
                     <div class="flex-1 overflow-y-auto scrollbar-thin px-3 pt-1 pb-3">
-                        <p v-if="conversations.length" class="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-oc-faint">Sessions</p>
+                        <p v-if="conversations.length" class="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-oc-faint">Sessions</p>
                         <div v-if="conversations.length === 0" class="text-center text-[12px] text-oc-faint mt-8 px-4">
                             No sessions yet
                         </div>
                         <div v-for="conv in conversations" :key="conv.id">
                             <button
                                 @click="loadConversation(conv)"
-                                class="group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors cursor-pointer text-left border"
+                                class="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] transition-all cursor-pointer text-left my-1"
                                 :class="activeConversationId === conv.id
-                                    ? 'bg-oc-active border-oc-border-strong text-oc-text'
-                                    : 'border-transparent text-oc-muted hover:bg-oc-hover hover:text-oc-text'"
+                                    ? 'neu-pressed text-oc-text font-medium'
+                                    : 'text-oc-muted hover:text-oc-text hover:bg-oc-hover/40'"
                             >
-                                <span class="w-1 h-4 rounded-full shrink-0 transition-colors" :class="activeConversationId === conv.id ? 'bg-oc-primary' : 'bg-transparent'"></span>
+                                <span class="w-1.5 h-4 rounded-full shrink-0 transition-colors" :class="activeConversationId === conv.id ? 'bg-oc-primary' : 'bg-transparent'"></span>
                                 <span class="truncate flex-1">{{ conv.title }}</span>
                                 <span
                                     @click.stop="deleteConversation(conv)"
@@ -292,8 +307,8 @@
                         </div>
                     </div>
 
-                    <div class="shrink-0 border-t border-oc-border p-3 space-y-2">
-                        <div class="bg-oc-raised border border-oc-border rounded-lg px-3 py-2.5">
+                    <div class="shrink-0 border-t border-oc-border p-3 space-y-2.5">
+                        <div class="neu-pressed px-3 py-2.5">
                             <template v-if="hasContext">
                                 <div v-if="user.cv_name" class="flex items-center gap-2 min-w-0" :title="user.cv_name">
                                     <i class="fa-solid fa-file-lines text-[10px] text-oc-primary shrink-0"></i>
@@ -303,74 +318,89 @@
                                     <i class="fa-solid fa-location-dot text-[10px] text-oc-primary shrink-0"></i>
                                     <span class="text-[11px] text-oc-muted truncate">{{ [user.job_location, salaryLabel].filter(Boolean).join(' · ') }}</span>
                                 </div>
-                                <div v-if="keywordList.length" class="flex flex-wrap gap-1">
-                                    <span v-for="kw in keywordList" :key="kw" class="text-[10px] px-1.5 py-0.5 rounded bg-oc-surface border border-oc-border text-oc-muted">{{ kw }}</span>
+                                <div v-if="keywordList.length" class="flex flex-wrap gap-1 mt-1">
+                                    <span v-for="kw in keywordList" :key="kw" class="text-[10px] px-1.5 py-0.5 rounded-md neu-card-sm text-oc-muted">{{ kw }}</span>
                                 </div>
                             </template>
                             <p v-else class="text-[11px] text-oc-faint leading-4">
                                 No profile context yet.
-                                <a href="/profile" class="text-oc-primary hover:underline">Add your CV</a>
+                                <a href="/profile" class="text-oc-primary font-medium hover:underline">Add your CV</a>
                             </p>
                         </div>
 
-                        <div class="bg-oc-raised border border-oc-border rounded-lg px-3 py-2.5 space-y-1">
+                        <div class="neu-pressed px-3 py-2.5 space-y-1">
                             <div class="flex items-center justify-between text-[11px]">
                                 <span class="text-oc-muted">Tokens used</span>
-                                <span class="text-oc-primary-strong font-semibold tabular-nums">{{ systemTokens.toLocaleString() }}</span>
+                                <span class="text-oc-primary font-bold tabular-nums">{{ systemTokens.toLocaleString() }}</span>
                             </div>
-                            <div class="flex items-center justify-between text-[11px] text-oc-muted border-t border-oc-border pt-1">
+                            <div class="flex items-center justify-between text-[11px] text-oc-muted border-t border-oc-border/50 pt-1">
                                 <span>This session</span>
                                 <span class="text-oc-text font-medium tabular-nums">{{ sessionTokens.toLocaleString() }}</span>
                             </div>
                         </div>
 
                         <div class="relative pt-1">
-                            <div v-if="profileMenuOpen" class="fixed inset-0 z-40" @click="profileMenuOpen = false"></div>
+                            <template v-if="user">
+                                <div v-if="profileMenuOpen" class="fixed inset-0 z-40" @click="profileMenuOpen = false"></div>
 
-                            <div
-                                v-if="profileMenuOpen"
-                                class="absolute bottom-full left-0 right-0 mb-1.5 z-50 rounded-xl border border-oc-border bg-oc-surface shadow-[0_10px_30px_rgba(0,0,0,0.6)] overflow-hidden oc-menu"
-                                style="transform-origin: bottom center"
-                                @click.stop
-                            >
-                                <div class="px-3.5 py-3 border-b border-oc-border">
-                                    <p class="text-[13px] font-medium text-oc-text truncate">{{ user.name }}</p>
-                                    <p class="text-[11px] text-oc-muted truncate">{{ user.username ? '@' + user.username : user.email }}</p>
+                                <div
+                                    v-if="profileMenuOpen"
+                                    class="absolute bottom-full left-0 right-0 mb-2 z-50 neu-card overflow-hidden oc-menu"
+                                    style="transform-origin: bottom center"
+                                    @click.stop
+                                >
+                                    <div class="px-3.5 py-3 border-b border-oc-border">
+                                        <p class="text-[13px] font-medium text-oc-text truncate">{{ user?.name }}</p>
+                                        <p class="text-[11px] text-oc-muted truncate">{{ user?.username ? '@' + user.username : user?.email }}</p>
+                                    </div>
+
+                                    <div class="py-1.5">
+                                        <button @click="openEditProfile" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
+                                            <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
+                                            Edit profile
+                                        </button>
+                                        <a href="/profile" @click="profileMenuOpen = false" class="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
+                                            <i class="fa-solid fa-file-arrow-up text-[12px] text-oc-muted w-4 text-center"></i>
+                                            Upload CV
+                                        </a>
+                                        <div class="my-1.5 border-t border-oc-border"></div>
+                                        <button @click="requestSignOut" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer">
+                                            <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
+                                            Sign out
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="py-1.5">
-                                    <button @click="openEditProfile" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
-                                        <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
-                                        Edit profile
-                                    </button>
-                                    <a href="/profile" @click="profileMenuOpen = false" class="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer">
-                                        <i class="fa-solid fa-file-arrow-up text-[12px] text-oc-muted w-4 text-center"></i>
-                                        Upload CV
-                                    </a>
-                                    <div class="my-1.5 border-t border-oc-border"></div>
-                                    <button @click="requestSignOut" class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer">
-                                        <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
-                                        Sign out
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                @click="profileMenuOpen = !profileMenuOpen"
-                                class="w-full flex items-center gap-3 rounded-lg px-2.5 py-2 transition cursor-pointer border"
-                                :class="profileMenuOpen ? 'bg-oc-hover border-oc-border-strong' : 'bg-transparent border-transparent hover:bg-oc-hover'"
-                            >
-                                <div class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center overflow-hidden shrink-0">
-                                    <img v-if="user.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
-                                    <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
-                                </div>
-                                <div class="min-w-0 text-left">
-                                    <div class="text-[12px] font-medium text-oc-text truncate">{{ user.name }}</div>
-                                    <div class="text-[10px] text-oc-faint truncate">{{ user.email }}</div>
-                                </div>
-                                <i class="fa-solid fa-chevron-down text-[9px] text-oc-faint ml-auto shrink-0 transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''"></i>
-                            </button>
+                                <button
+                                    type="button"
+                                    @click="profileMenuOpen = !profileMenuOpen"
+                                    class="w-full flex items-center gap-3 rounded-xl p-2 neu-btn"
+                                >
+                                    <div class="w-8 h-8 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center overflow-hidden shrink-0">
+                                        <img v-if="user?.avatar_url" :src="user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
+                                        <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ (user?.name || '?').charAt(0).toUpperCase() }}</span>
+                                    </div>
+                                    <div class="min-w-0 text-left">
+                                        <div class="text-[12px] font-medium text-oc-text truncate">{{ user?.name }}</div>
+                                        <div class="text-[10px] text-oc-faint truncate">{{ user?.email }}</div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-down text-[9px] text-oc-faint ml-auto shrink-0 transition-transform duration-200" :class="profileMenuOpen ? 'rotate-180' : ''"></i>
+                                </button>
+                            </template>
+                            <template v-else>
+                                <a href="/login" class="w-full flex items-center justify-between neu-btn py-2 px-3">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-7 h-7 rounded-lg neu-card-sm flex items-center justify-center shrink-0">
+                                            <i class="fa-solid fa-user text-[11px] text-oc-primary"></i>
+                                        </div>
+                                        <div class="text-left min-w-0">
+                                            <div class="text-[12px] font-medium text-oc-text">Guest User</div>
+                                            <div class="text-[10px] text-oc-muted">Sign in to save</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right-to-bracket text-[11px] text-oc-primary"></i>
+                                </a>
+                            </template>
                         </div>
                     </div>
                 </template>
@@ -401,9 +431,9 @@
                     <button
                         @click="sidebarOpen = true"
                         class="w-8 h-8 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"
-                        :title="user.name"
+                        :title="user?.name || ''"
                     >
-                        <span class="text-[11px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                        <span class="text-[11px] font-semibold text-oc-primary-strong">{{ (user?.name || '?').charAt(0).toUpperCase() }}</span>
                     </button>
                 </div>
             </div>
@@ -497,6 +527,21 @@ const messageCount = ref(0);
 const feedbackShown = ref(false);
 let abortController = null;
 
+const isDarkMode = ref(typeof localStorage !== 'undefined' ? localStorage.getItem('theme') !== 'light' : true);
+
+function toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    const theme = isDarkMode.value ? 'dark' : 'light';
+    localStorage.setItem('theme', theme);
+    if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+    } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+    }
+}
+
 const isSpeechSupported = ref(typeof window !== 'undefined' && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
 const isRecording = ref(false);
 const transcribing = ref(false);
@@ -509,14 +554,19 @@ let silenceGain = null;
 let recordingChunks = [];
 let recordingTimer = null;
 
-const defaultStatus = { status: 'healthy', percentage: 0, resets_at: null };
-const apiStatus = ref(page.props.api_status || defaultStatus);
+const selectedMode = ref('general');
+const modes = [
+    { id: 'general', label: '🤖 General Assistant' },
+    { id: 'code', label: '💻 Code Expert' },
+    { id: 'tutor', label: '📚 Language Tutor' },
+    { id: 'summary', label: '📝 Summarizer' },
+];
 
 const suggestions = [
-    { label: 'Explain a concept', prompt: 'Explain quantum computing in simple terms', icon: 'fa-solid fa-lightbulb' },
-    { label: 'Write something', prompt: 'Write a short poem about the ocean', icon: 'fa-solid fa-pen-fancy' },
-    { label: 'Plan ahead', prompt: 'Plan a productive morning routine', icon: 'fa-solid fa-calendar' },
-    { label: 'Solve a problem', prompt: 'Help me debug a JavaScript async/await issue', icon: 'fa-solid fa-code' },
+    { label: 'Explain a concept', prompt: 'Explain quantum computing in simple terms', icon: 'fa-solid fa-lightbulb', mode: 'general' },
+    { label: 'Improve my writing', prompt: 'Please correct the grammar and enhance this paragraph: ', icon: 'fa-solid fa-pen-fancy', mode: 'tutor' },
+    { label: 'Summarize text', prompt: 'Provide a structured bullet-point summary of key takeaways.', icon: 'fa-solid fa-file-contract', mode: 'summary' },
+    { label: 'Debug & Review Code', prompt: 'Review and optimize this code snippet for performance and clean architecture:', icon: 'fa-solid fa-code', mode: 'code' },
 ];
 
 const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff', 'application/pdf', 'text/plain', 'text/csv'];
@@ -538,7 +588,10 @@ function getFileIcon(mimeType) {
     return { icon: 'fa-solid fa-file', iconColor: '#9c9ca5', ext: 'FILE' };
 }
 
-const isSystemBusy = computed(() => apiStatus.value.status === 'exhausted');
+const defaultStatus = { status: 'healthy', percentage: 0, resets_at: null };
+const apiStatus = ref(page.props.api_status || defaultStatus);
+
+const isSystemBusy = computed(() => apiStatus.value?.status === 'exhausted');
 
 const statusStyles = computed(() => {
     const status = apiStatus.value.status;
@@ -795,8 +848,13 @@ function newChat() {
     scrollDown();
 }
 
-function useSuggestion(promptText) {
-    input.value = promptText;
+function useSuggestion(suggestion) {
+    if (typeof suggestion === 'object') {
+        input.value = suggestion.prompt;
+        if (suggestion.mode) selectedMode.value = suggestion.mode;
+    } else {
+        input.value = suggestion;
+    }
     sendMessage();
 }
 
@@ -862,7 +920,10 @@ async function sendMessage() {
     abortController = new AbortController();
 
     try {
-        const payload = { message: text || (attachment && imageTypes.includes(attachment.mime_type) ? 'Describe this image.' : 'Analyze this file.') };
+        const payload = {
+            message: text || (attachment && imageTypes.includes(attachment.mime_type) ? 'Describe this image.' : 'Analyze this file.'),
+            mode: selectedMode.value
+        };
         if (attachment) payload.attachments = [attachment];
         if (activeConversationId.value) payload.conversation_id = activeConversationId.value;
 
@@ -1021,9 +1082,19 @@ onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     document.addEventListener('paste', handlePaste);
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        isDarkMode.value = false;
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+    } else {
+        isDarkMode.value = true;
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+    }
+    sidebarOpen.value = !isMobile.value;
     if (user.value) {
         loadConversations();
-        sidebarOpen.value = !isMobile.value;
     }
 });
 

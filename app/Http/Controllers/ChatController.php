@@ -40,9 +40,10 @@ class ChatController extends Controller
      */
     public function ask(AskRequest $request, GeminiService $gemini): JsonResponse
     {
-        // Step 1 - Read the message, conversation id and any attached files.
+        // Step 1 - Read the message, conversation id, mode and any attached files.
         $message = $request->validated('message');
         $conversationId = $request->validated('conversation_id');
+        $mode = $request->validated('mode', 'general');
         $attachments = $this->validateAttachments($request->validated('attachments', []));
 
         // If an attachment was not allowed, return the error to the browser.
@@ -64,7 +65,7 @@ class ChatController extends Controller
             [$conversation, $history] = $this->buildHistory($user, $message, $attachments, $conversationId);
 
             // Step 4 - Ask the AI for an answer.
-            $result = $gemini->generateContent($history);
+            $result = $gemini->generateContent($history, $user, $conversation?->id, $mode);
 
             // Step 5 - If the AI returned an error, report it to the browser.
             if (isset($result['error'])) {
@@ -103,9 +104,10 @@ class ChatController extends Controller
      */
     public function askStreaming(AskRequest $request, GeminiService $gemini): StreamedResponse
     {
-        // Step 1 - Read the message and any attached files.
+        // Step 1 - Read the message, conversation id, mode and any attached files.
         $message = $request->validated('message');
         $conversationId = $request->validated('conversation_id');
+        $mode = $request->validated('mode', 'general');
         $attachments = $this->validateAttachments($request->validated('attachments', []));
 
         if ($this->hasError($attachments)) {
@@ -128,7 +130,7 @@ class ChatController extends Controller
         [$conversation, $history] = $this->buildHistory($user, $message, $attachments, $conversationId);
 
         // Step 4 - Start the AI stream.
-        $stream = $gemini->streamContent($history);
+        $stream = $gemini->streamContent($history, $user, $conversation?->id, $mode);
 
         // Step 5 - Send the reply to the browser one piece at a time.
         return response()->stream(function () use ($stream, $user, $message, $attachments, $conversation, $gemini) {

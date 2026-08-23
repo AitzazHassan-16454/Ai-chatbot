@@ -22,14 +22,14 @@
                     </template>
                 </div>
 
-                <div class="bg-oc-raised border border-oc-border rounded-2xl rounded-br-md px-4 py-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
-                    <p class="msg text-oc-text text-[13.5px] sm:text-[14.5px] leading-[1.7] whitespace-pre-wrap break-words">{{ msg.text }}</p>
+                <div class="neu-card-sm !rounded-2xl !rounded-br-md px-4.5 py-3 border border-oc-border">
+                    <p class="msg text-oc-text text-[13.5px] sm:text-[14.5px] leading-[1.7] whitespace-pre-wrap break-words font-normal">{{ msg.text }}</p>
                 </div>
 
-                <div class="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                         @click="copyText(msg.text)"
-                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
+                        class="w-7 h-7 rounded-lg neu-btn !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text"
                         :title="'Copy message'"
                     >
                         <i class="fa-regular fa-copy text-[11px]"></i>
@@ -37,33 +37,33 @@
                 </div>
             </div>
 
-            <div class="w-7 h-7 rounded-full bg-oc-raised border border-oc-border flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-user text-[11px] text-oc-muted"></i>
+            <div class="w-8 h-8 rounded-xl neu-card-sm flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-user text-[12px] text-oc-primary"></i>
             </div>
         </div>
 
         <div v-else-if="msg.role === 'error'" class="flex items-start gap-2.5 sm:gap-3">
-            <span class="w-7 h-7 rounded-lg bg-oc-error/10 border border-oc-error/25 flex items-center justify-center shrink-0 mt-0.5">
-                <i class="fa-solid fa-triangle-exclamation text-[11px] text-oc-error"></i>
+            <span class="w-8 h-8 rounded-xl bg-oc-error/10 border border-oc-error/25 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-triangle-exclamation text-[12px] text-oc-error"></i>
             </span>
-            <div class="text-oc-error/90 text-[13px] sm:text-[14px] leading-relaxed pt-1">{{ msg.text }}</div>
+            <div class="text-oc-error/90 text-[13px] sm:text-[14px] leading-relaxed pt-1.5 font-medium">{{ msg.text }}</div>
         </div>
 
         <div v-else-if="msg.text" class="flex items-start gap-2.5 sm:gap-3">
-            <div class="w-7 h-7 rounded-lg bg-oc-primary/15 border border-oc-primary/30 flex items-center justify-center shrink-0 mt-0.5">
-                <NovaIcon :size="13" />
+            <div class="w-8 h-8 rounded-xl neu-card-sm flex items-center justify-center shrink-0 mt-0.5">
+                <NovaIcon :size="15" />
             </div>
 
             <div class="min-w-0 flex-1">
-                <span class="block text-[11px] font-semibold text-oc-muted mb-1">Nova</span>
+                <span class="block text-[11px] font-bold text-oc-muted mb-1 tracking-wide">Nova AI</span>
 
-                <div class="msg text-oc-text/90 text-[13.5px] sm:text-[14.5px] leading-[1.75]" v-html="formatText(msg.text)"></div>
-                <span v-if="streaming" class="nova-cursor text-oc-muted" aria-hidden="true"></span>
+                <div class="msg text-oc-text/95 text-[13.5px] sm:text-[14.5px] leading-[1.75]" v-html="formatText(msg.text)"></div>
+                <span v-if="streaming" class="nova-cursor text-oc-primary" aria-hidden="true"></span>
 
-                <div class="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="flex items-center gap-1.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                         @click="copyText(msg.text)"
-                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer"
+                        class="w-7 h-7 rounded-lg neu-btn !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text"
                         :title="'Copy reply'"
                     >
                         <i class="fa-regular fa-copy text-[11px]"></i>
@@ -71,10 +71,10 @@
                     <button
                         @click="toggleSpeak"
                         :disabled="loading"
-                        class="w-6 h-6 rounded-md flex items-center justify-center text-oc-faint hover:bg-oc-hover hover:text-oc-text transition cursor-pointer disabled:opacity-40 active:scale-90"
+                        class="w-7 h-7 rounded-lg neu-btn !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text disabled:opacity-40"
                         :title="isSpeaking ? 'Stop' : 'Listen to this reply'"
                     >
-                        <i :class="loading ? 'fa-solid fa-spinner fa-spin' : isSpeaking ? 'fa-solid fa-stop' : 'fa-solid fa-volume-high'" class="text-[11px]"></i>
+                        <i :class="loading ? 'fa-solid fa-spinner fa-spin' : isSpeaking ? 'fa-solid fa-stop text-oc-error' : 'fa-solid fa-volume-high'" class="text-[11px]"></i>
                     </button>
                 </div>
             </div>

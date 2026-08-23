@@ -1,55 +1,64 @@
 <template>
-    <div class="h-screen flex flex-col overflow-hidden">
-        <header class="shrink-0 px-4 sm:px-6 py-3 border-b border-oc-border">
+    <div class="h-screen flex flex-col overflow-hidden bg-oc-bg">
+        <header class="shrink-0 px-4 sm:px-6 py-3 border-b border-oc-border bg-oc-surface">
             <div class="max-w-3xl mx-auto flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <a href="/" class="w-9 h-9 rounded-lg bg-oc-surface border border-oc-border flex items-center justify-center hover:bg-oc-hover transition cursor-pointer">
-                        <i class="fa-solid fa-arrow-left text-[14px] text-oc-muted"></i>
+                    <a href="/" class="neu-btn w-9 h-9 !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text">
+                        <i class="fa-solid fa-arrow-left text-[14px]"></i>
                     </a>
                     <div>
-                        <h1 class="text-[15px] font-semibold text-oc-text">Profile & Job Alerts</h1>
+                        <h1 class="text-[16px] font-bold text-oc-text">Profile & Job Alerts</h1>
                         <p class="text-[11px] text-oc-muted">Upload CV and set job preferences</p>
                     </div>
                 </div>
-                <div class="relative">
+                <div class="flex items-center gap-2">
                     <button
+                        @click="toggleTheme"
                         type="button"
-                        @click="menuOpen = !menuOpen"
-                        class="w-8 h-8 rounded-md bg-oc-raised border border-oc-border flex items-center justify-center hover:bg-oc-hover hover:border-oc-border-strong transition cursor-pointer overflow-hidden select-none"
-                        :class="menuOpen ? 'bg-oc-hover border-oc-border-strong' : ''"
+                        class="w-9 h-9 rounded-xl neu-btn !p-0 flex items-center justify-center text-oc-muted hover:text-oc-text transition"
+                        :title="isDarkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
                     >
-                        <img v-if="props.user.avatar_url" :src="props.user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
-                        <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                        <i :class="isDarkMode ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-indigo-500'" class="text-[13px]"></i>
                     </button>
+                    <div class="relative">
+                        <button
+                            type="button"
+                            @click="menuOpen = !menuOpen"
+                            class="w-9 h-9 rounded-xl neu-btn !p-0 flex items-center justify-center overflow-hidden select-none"
+                        >
+                            <img v-if="props.user.avatar_url" :src="props.user.avatar_url" class="w-full h-full object-cover" alt="Profile" />
+                            <span v-else class="text-[12px] font-semibold text-oc-primary-strong">{{ user.name.charAt(0).toUpperCase() }}</span>
+                        </button>
 
-                    <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = false"></div>
+                        <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = false"></div>
 
-                    <div
-                        v-if="menuOpen"
-                        class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-oc-surface border border-oc-border shadow-[0_10px_30px_rgba(0,0,0,0.6)] overflow-hidden z-50 oc-menu"
-                        @click.stop
-                    >
-                        <div class="px-3.5 py-3 border-b border-oc-border">
-                            <p class="text-[13px] font-medium text-oc-text truncate">{{ user.name }}</p>
-                            <p class="text-[11px] text-oc-muted truncate">{{ user.username ? '@' + user.username : user.email }}</p>
-                        </div>
+                        <div
+                            v-if="menuOpen"
+                            class="absolute right-0 top-full mt-2 w-56 neu-card overflow-hidden z-50 oc-menu"
+                            @click.stop
+                        >
+                            <div class="px-3.5 py-3 border-b border-oc-border">
+                                <p class="text-[13px] font-medium text-oc-text truncate">{{ user.name }}</p>
+                                <p class="text-[11px] text-oc-muted truncate">{{ user.username ? '@' + user.username : user.email }}</p>
+                            </div>
 
-                        <div class="py-1.5">
-                            <button
-                                @click="openEditModal"
-                                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer"
-                            >
-                                <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
-                                Edit profile
-                            </button>
-                            <div class="my-1.5 border-t border-oc-border"></div>
-                            <button
-                                @click="requestSignOut"
-                                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer"
-                            >
-                                <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
-                                Sign out
-                            </button>
+                            <div class="py-1.5">
+                                <button
+                                    @click="openEditModal"
+                                    class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-text hover:bg-oc-hover transition cursor-pointer"
+                                >
+                                    <i class="fa-solid fa-user-pen text-[12px] text-oc-muted w-4 text-center"></i>
+                                    Edit profile
+                                </button>
+                                <div class="my-1.5 border-t border-oc-border"></div>
+                                <button
+                                    @click="requestSignOut"
+                                    class="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-oc-error hover:bg-oc-hover transition cursor-pointer"
+                                >
+                                    <i class="fa-solid fa-arrow-right-from-bracket text-[12px] w-4 text-center"></i>
+                                    Sign out
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -59,23 +68,23 @@
         <div class="flex-1 overflow-y-auto scrollbar-thin">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
-            <div v-if="successMsg" class="bg-oc-success/10 border border-oc-success/25 rounded-lg px-4 py-3 flex items-center gap-2.5">
+            <div v-if="successMsg" class="bg-oc-success/10 border border-oc-success/25 rounded-xl px-4 py-3 flex items-center gap-2.5">
                 <i class="fa-solid fa-circle-check text-oc-success text-sm"></i>
                 <p class="text-[13px] text-oc-success">{{ successMsg }}</p>
             </div>
 
-            <div v-if="errorMsg" class="bg-oc-error/10 border border-oc-error/25 rounded-lg px-4 py-3 flex items-center gap-2.5">
+            <div v-if="errorMsg" class="bg-oc-error/10 border border-oc-error/25 rounded-xl px-4 py-3 flex items-center gap-2.5">
                 <i class="fa-solid fa-triangle-exclamation text-oc-error text-sm"></i>
                 <p class="text-[13px] text-oc-error">{{ errorMsg }}</p>
             </div>
 
-            <div class="bg-oc-surface border border-oc-border rounded-xl p-5 sm:p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center">
-                        <i class="fa-solid fa-file-arrow-up text-oc-primary text-[14px]"></i>
+            <div class="neu-card p-6 sm:p-7">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-xl neu-pressed flex items-center justify-center">
+                        <i class="fa-solid fa-file-arrow-up text-oc-primary text-[15px]"></i>
                     </div>
                     <div>
-                        <h2 class="text-[14px] font-medium text-oc-text">Upload CV / Resume</h2>
+                        <h2 class="text-[15px] font-semibold text-oc-text">Upload CV / Resume</h2>
                         <p class="text-[11px] text-oc-muted">PDF format, max 10MB. AI will extract your skills automatically.</p>
                     </div>
                 </div>
@@ -123,13 +132,13 @@
                     </div>
             </div>
 
-            <div class="bg-oc-surface border border-oc-border rounded-xl p-5 sm:p-6">
+            <div class="neu-card p-6 sm:p-7">
                 <div class="flex items-center gap-3 mb-5">
-                    <div class="w-9 h-9 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center">
-                        <i class="fa-solid fa-sliders text-oc-primary text-[14px]"></i>
+                    <div class="w-10 h-10 rounded-xl neu-pressed flex items-center justify-center">
+                        <i class="fa-solid fa-sliders text-oc-primary text-[15px]"></i>
                     </div>
                     <div>
-                        <h2 class="text-[14px] font-medium text-oc-text">Job Preferences</h2>
+                        <h2 class="text-[15px] font-semibold text-oc-text">Job Preferences</h2>
                         <p class="text-[11px] text-oc-muted">Set your search criteria for daily job alerts</p>
                     </div>
                 </div>
@@ -424,6 +433,21 @@ async function searchJobs() {
     }
 }
 
+const isDarkMode = ref(typeof localStorage !== 'undefined' ? localStorage.getItem('theme') !== 'light' : true);
+
+function toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    const theme = isDarkMode.value ? 'dark' : 'light';
+    localStorage.setItem('theme', theme);
+    if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+    } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+    }
+}
+
 function openEditModal() {
     menuOpen.value = false;
     showEditModal.value = true;
@@ -443,6 +467,16 @@ function logout() {
 }
 
 onMounted(async function () {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        isDarkMode.value = false;
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+    } else {
+        isDarkMode.value = true;
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+    }
     try {
         var response = await axios.get('/job-alerts');
         jobs.value = response.data.jobs;
