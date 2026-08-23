@@ -3,7 +3,7 @@
         <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close"></div>
 
-            <div class="relative bg-oc-surface border border-oc-border-strong rounded-xl w-full max-w-md shadow-2xl">
+            <div class="relative neu-card w-full max-w-md">
                 <button
                     @click="close"
                     class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-oc-hover transition cursor-pointer"

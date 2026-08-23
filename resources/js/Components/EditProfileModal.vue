@@ -4,7 +4,7 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
         @click.self="$emit('close')"
     >
-        <div class="w-full max-w-md bg-oc-surface border border-oc-border rounded-xl shadow-2xl oc-fade-in">
+        <div class="w-full max-w-md neu-card oc-fade-in">
             <div class="flex items-center justify-between px-5 py-4 border-b border-oc-border">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-lg bg-oc-raised border border-oc-border flex items-center justify-center">

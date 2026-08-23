@@ -16,6 +16,7 @@ class AskRequest extends FormRequest
         return [
             'message' => ['required', 'string', 'max:5000'],
             'conversation_id' => ['nullable', 'integer', 'exists:conversations,id'],
+            'mode' => ['nullable', 'string', 'in:general,code,tutor,summary'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*.mime_type' => ['required_with:attachments', 'string', 'in:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff,application/pdf,text/plain,text/csv'],
             'attachments.*.data' => ['required_with:attachments', 'string'],

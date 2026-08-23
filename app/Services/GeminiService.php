@@ -2,6 +2,12 @@
 
 namespace App\Services;
 
+use App\Agents\AssistantAgent;
+use App\Agents\CodeReviewerAgent;
+use App\Agents\LanguageTutorAgent;
+use App\Agents\SummarizerAgent;
+use App\Models\User;
+use Laravel\Ai\Contracts\Agent;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Log;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
@@ -15,8 +21,6 @@ use Laravel\Ai\Streaming\Events\Error as StreamError;
 use Laravel\Ai\Streaming\Events\StreamEnd;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Throwable;
-
-use function Laravel\Ai\agent;
 
 /**
  * Talks to the Google Gemini API using the Laravel AI SDK.
@@ -41,17 +45,18 @@ class GeminiService
         $this->model = config('services.gemini.model', 'gemini-2.5-flash');
     }
 
-    /** Asks Gemini for one complete answer and returns it as an array. */
-    public function generateContent(array $history): array
+    /** Asks the AI agent for one complete answer and returns it as an array. */
+    public function generateContent(array $history, ?User $user = null, ?int $conversationId = null, string $mode = 'general'): array
     {
         [$messages, $prompt, $attachments] = $this->splitHistory($history);
+        $this->indexTextAttachments($attachments, $user, $conversationId);
 
         try {
-            // The Laravel AI SDK builds the Gemini request for us.
-            $response = agent('', $messages)->prompt(
+            $agent = $this->resolveAgent($mode, $messages, $user, $conversationId);
+            $response = $agent->prompt(
                 $prompt,
                 $attachments,
-                provider: 'gemini',
+                provider: $this->providers(),
                 model: $this->model,
                 timeout: 120,
             );
@@ -68,27 +73,29 @@ class GeminiService
                 'usage_metadata' => $this->usageMetadata($response->usage),
             ];
         } catch (Throwable $e) {
-            Log::error('Gemini error: '.$e->getMessage());
+            Log::error('AI error: '.$e->getMessage());
 
             return $this->errorResult($e);
         }
     }
 
     /**
-     * Asks Gemini for an answer, but yields each piece of text as it is
+     * Asks the AI agent for an answer, yielding each piece of text as it is
      * generated instead of waiting for the whole reply.
      *
      * @return \Generator<int, array{type: string, text?: string, tokens_used?: int, usage_metadata?: array, message?: string, status?: int}>
      */
-    public function streamContent(array $history): \Generator
+    public function streamContent(array $history, ?User $user = null, ?int $conversationId = null, string $mode = 'general'): \Generator
     {
         [$messages, $prompt, $attachments] = $this->splitHistory($history);
+        $this->indexTextAttachments($attachments, $user, $conversationId);
 
         try {
-            $stream = agent('', $messages)->stream(
+            $agent = $this->resolveAgent($mode, $messages, $user, $conversationId);
+            $stream = $agent->stream(
                 $prompt,
                 $attachments,
-                provider: 'gemini',
+                provider: $this->providers(),
                 model: $this->model,
                 timeout: 120,
             );
@@ -113,12 +120,37 @@ class GeminiService
                 }
             }
         } catch (Throwable $e) {
-            Log::error('Gemini stream error: '.$e->getMessage());
+            Log::error('AI stream error: '.$e->getMessage());
 
             $result = $this->errorResult($e);
 
             yield ['type' => 'error', 'message' => $result['error'], 'status' => $result['status']];
         }
+    }
+
+    /**
+     * Get the primary provider or fallback providers list for automatic failover.
+     *
+     * @return array<int, string>|string
+     */
+    private function providers(): array|string
+    {
+        $providers = ['gemini'];
+
+        if (config('ai.providers.openai.key')) {
+            $providers[] = 'openai';
+        }
+        if (config('ai.providers.groq.key')) {
+            $providers[] = 'groq';
+        }
+        if (config('ai.providers.deepseek.key')) {
+            $providers[] = 'deepseek';
+        }
+        if (config('ai.providers.anthropic.key')) {
+            $providers[] = 'anthropic';
+        }
+
+        return count($providers) > 1 ? $providers : 'gemini';
     }
 
     /** True when an API key is set in the config. */
@@ -278,6 +310,45 @@ class GeminiService
             500, 502, 503, 504 => 'The AI service is temporarily unavailable. Please try again in a moment.',
             0, null => 'Could not reach the AI service. Check your connection and try again.',
             default => $fallback,
+        };
+    }
+
+    /**
+     * Auto-indexes uploaded text/PDF files into the document knowledge store.
+     */
+    private function indexTextAttachments(array $attachments, ?User $user, ?int $conversationId): void
+    {
+        if (empty($attachments)) {
+            return;
+        }
+
+        foreach ($attachments as $att) {
+            $mime = $att->mimeType ?? '';
+            $name = $att->name ?? 'document.txt';
+
+            if (str_contains($mime, 'text/') || str_contains($mime, 'pdf') || str_contains($mime, 'json') || str_contains($mime, 'csv')) {
+                try {
+                    $content = method_exists($att, 'content') ? $att->content() : '';
+                    if (! empty($content)) {
+                        app(DocumentKnowledgeService::class)->indexDocument($name, $content, $user, $conversationId);
+                    }
+                } catch (Throwable $e) {
+                    Log::warning("Failed to index attachment {$name}: ".$e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolves the appropriate Agent class based on the requested mode.
+     */
+    private function resolveAgent(string $mode, array $messages, ?User $user, ?int $conversationId): Agent
+    {
+        return match ($mode) {
+            'code' => new CodeReviewerAgent($messages, $user, $conversationId),
+            'tutor' => new LanguageTutorAgent($messages, $user, $conversationId),
+            'summary' => new SummarizerAgent($messages, $user, $conversationId),
+            default => new AssistantAgent($messages, $user, $conversationId),
         };
     }
 }

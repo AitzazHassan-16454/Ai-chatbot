@@ -24,7 +24,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? (new UserResource($request->user()))->toArray($request) : null,
+                'user' => $request->user() ? (new UserResource($request->user()))->resolve($request) : null,
             ],
             'api_status' => $systemUsage->apiStatusArray(),
             'token_usage' => [
